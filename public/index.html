@@ -18,7 +18,7 @@
   <script>
     async function fetchData() {
       try {
-        const res = await fetch("http://localhost:3000/api/latest-data");
+        const res = await fetch("/api/latest-data");
         const data = await res.json();
 
         const list = document.getElementById("device-list");
