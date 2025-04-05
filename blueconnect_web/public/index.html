@@ -16,36 +16,38 @@
   <div id="device-list">Veriler yükleniyor...</div>
 
   <script>
-    async function fetchData() {
-      try {
-        const res = await fetch("/api/latest-data");
-        const data = await res.json();
-  
-        const list = document.getElementById("device-list");
-        list.innerHTML = '';
-  
-        Object.entries(data).forEach(([deviceId, info]) => {
-          const el = document.createElement('div');
-          el.className = "device";
-  
-          const name = info.deviceName || "Bilinmeyen Cihaz";
-  
-          el.innerHTML = `
-            <div><span>Cihaz:</span> ${name} (${deviceId})</div>
-            <div><span>Sıcaklık:</span> ${info.temperature} °C</div>
-            <div><span>Nem:</span> ${info.humidity} %</div>
-            <div><span>Zaman:</span> ${new Date(info.timestamp).toLocaleString()}</div>
-          `;
-          list.appendChild(el);
-        });
-      } catch (err) {
-        console.error("Veri alınamadı", err);
-      }
+  async function fetchData() {
+    try {
+      const res = await fetch("/api/latest-data");
+      const data = await res.json();
+
+      const list = document.getElementById("device-list");
+      list.innerHTML = '';
+
+      Object.entries(data).forEach(([deviceId, info]) => {
+        const el = document.createElement('div');
+        el.className = "device";
+
+        const name = info.deviceName || "Bilinmeyen Cihaz";
+
+        el.innerHTML = `
+          <div><span>📛 Cihaz Adı:</span> ${name}</div>
+          <div><span>🔗 MAC Adresi:</span> ${deviceId}</div>
+          <div><span>🌡️ Sıcaklık:</span> ${info.temperature} °C</div>
+          <div><span>💧 Nem:</span> ${info.humidity} %</div>
+          <div><span>⏱️ Zaman:</span> ${new Date(info.timestamp).toLocaleString()}</div>
+        `;
+        list.appendChild(el);
+      });
+    } catch (err) {
+      console.error("Veri alınamadı", err);
     }
-  
-    fetchData();
-    setInterval(fetchData, 1000);
-  </script>
+  }
+
+  fetchData();
+  setInterval(fetchData, 1000);
+</script>
+
   
 </body>
 </html>
