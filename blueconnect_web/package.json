@@ -1,9 +1,9 @@
 {
-  "name": "blueconnect_web",
+  "name": "blueconnect-web",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js"
   },
   "keywords": [],
   "author": "",
@@ -11,6 +11,8 @@
   "description": "",
   "dependencies": {
     "cors": "^2.8.5",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "mongodb": "^5.7.0",
+    "ws": "^8.13.0"
   }
 }
