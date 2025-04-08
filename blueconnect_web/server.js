@@ -49,7 +49,7 @@ app.post('/api/sensor-data', async (req, res) => {
         const { deviceId, deviceName, temperature, humidity, timestamp } = req.body;
 
         const collection = db.collection('sensor_readings');
-        await collection.insertOne({
+        const result = await collection.insertOne({
             deviceId,
             deviceName: deviceName || "Bilinmeyen Cihaz",
             temperature: parseFloat(temperature),
@@ -58,15 +58,17 @@ app.post('/api/sensor-data', async (req, res) => {
         });
 
         console.log(`[✓] Veri kaydedildi: ${deviceId}`);
-
-        // 🎯 WebSocket ile canlı veri yayını
-        io.emit('new-data', {
-            deviceId,
-            deviceName,
-            temperature,
-            humidity,
-            timestamp
-        });
+        
+        // insertOne işlemi başarılıysa emit et
+        if (result.insertedId) {
+          io.emit('new-data', {
+              deviceId,
+              deviceName,
+              temperature,
+              humidity,
+              timestamp
+          });
+        }
 
         res.sendStatus(200);
     } catch (err) {
