@@ -1,53 +1,211 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>BlueConnect Panel</title>
-  <style>
-    body { font-family: sans-serif; padding: 20px; background: #f0f0f0; }
-    h2 { color: #333; }
-    .device { background: white; padding: 15px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    .device span { font-weight: bold; }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BlueConnect Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+        }
+
+        body {
+            background: #f8f9fa;
+        }
+
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .sensor-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        #chart-container {
+            height: 400px;
+        }
+
+        .device-card.alert {
+            background-color: #ffe6e6;
+            border-left: 5px solid red;
+            animation: blink 1s infinite alternate;
+        }
+
+        @keyframes blink {
+            from {
+                background-color: #ffe6e6;
+            }
+
+            to {
+                background-color: #ffb3b3;
+            }
+        }
+    </style>
 </head>
-<body>
-  <h2>📡 BlueConnect Sensör Paneli</h2>
-  <div id="device-list">Veriler yükleniyor...</div>
+<body class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3"><i class="fas fa-microchip"></i> BlueConnect Sensör Paneli</h1>
+        <div>
+            <select id="device-filter" class="form-select me-2" onchange="updateAll()">
+                <option value="">Tüm Cihazlar</option>
+            </select>
+            <input type="date" id="date-filter" class="form-control" onchange="updateAll()">
+        </div>
+    </div>
 
-  <script>
-  async function fetchData() {
-    try {
-      const res = await fetch("/api/latest-data");
-      const data = await res.json();
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card p-3">
+                <h5 class="mb-3"><i class="fas fa-clock"></i> Anlık Veriler</h5>
+                <div id="realtime-data"></div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card p-3">
+                <h5 class="mb-3"><i class="fas fa-chart-line"></i> Geçmiş Veri Analizi</h5>
+                <div id="chart-container">
+                    <canvas id="sensor-chart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-12">
+            <div class="card p-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0"><i class="fas fa-table"></i> Veri Geçmişi</h5>
+                    <button class="btn btn-success" onclick="exportTableToCSV()">
+                        <i class="fas fa-file-csv"></i> CSV İndir
+                    </button>
+                </div>
+                <table class="table" id="history-table">
+                    <thead>
+                        <tr>
+                            <th>Cihaz</th>
+                            <th>Sıcaklık (°C)</th>
+                            <th>Nem (%)</th>
+                            <th>Zaman</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
-      const list = document.getElementById("device-list");
-      list.innerHTML = '';
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        const ctx = document.getElementById('sensor-chart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [
+                    { label: 'Sıcaklık', borderColor: '#e74c3c', data: [] },
+                    { label: 'Nem', borderColor: '#3498db', data: [] }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
 
-      Object.entries(data).forEach(([deviceId, info]) => {
-        const el = document.createElement('div');
-        el.className = "device";
+        async function fetchData(endpoint = '/api/latest-data') {
+            try {
+                const res = await fetch(endpoint);
+                return await res.json();
+            } catch (err) {
+                console.error('Hata:', err);
+            }
+        }
 
-        const name = info.deviceName || "Bilinmeyen Cihaz";
+        async function loadDeviceList() {
+            try {
+                const res = await fetch('/api/device-list');
+                const devices = await res.json();
+                const select = document.getElementById("device-filter");
+                select.innerHTML = '<option value="">Tüm Cihazlar</option>';
+                devices.filter(id => id && id.trim() !== "")
+                    .forEach(id => {
+                        const opt = document.createElement("option");
+                        opt.value = id;
+                        opt.textContent = id;
+                        select.appendChild(opt);
+                    });
+            } catch (err) {
+                console.error("Cihaz listesi alınamadı", err);
+            }
+        }
 
-        el.innerHTML = `
-          <div><span>📛 Cihaz Adı:</span> ${name}</div>
-          <div><span>🔗 MAC Adresi:</span> ${deviceId}</div>
-          <div><span>🌡️ Sıcaklık:</span> ${info.temperature} °C</div>
-          <div><span>💧 Nem:</span> ${info.humidity} %</div>
-          <div><span>⏱️ Zaman:</span> ${new Date(info.timestamp).toLocaleString()}</div>
-        `;
-        list.appendChild(el);
-      });
-    } catch (err) {
-      console.error("Veri alınamadı", err);
-    }
-  }
+        async function updateAll() {
+            const selectedDeviceId = document.getElementById("device-filter").value;
+            const selectedDate = document.getElementById("date-filter").value;
+            const startDate = new Date(selectedDate);
+            const endDate = new Date(selectedDate);
+            endDate.setHours(23, 59, 59, 999);
 
-  fetchData();
-  setInterval(fetchData, 1000);
-</script>
+            const query = `?deviceId=${selectedDeviceId}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`;
+            const latestData = await fetchData('/api/latest-data');
+            const historicalData = await fetchData('/api/historical-data' + query);
 
-  
+            document.getElementById('realtime-data').innerHTML =
+                Object.entries(latestData).map(([id, d]) => {
+                    const isHot = d.temperature > 30;
+                    return `
+                            <div class="device-card mb-3 p-3 rounded ${isHot ? 'alert' : 'bg-light'}">
+                                <div class="d-flex justify-content-between">
+                                    <h6>${d.deviceName || id}</h6>
+                                    <small>${new Date(d.timestamp).toLocaleTimeString()}</small>
+                                </div>
+                                <div class="sensor-value text-danger">${d.temperature}°C</div>
+                                <div class="sensor-value text-primary">${d.humidity}%</div>
+                            </div>
+                        `;
+                }).join('');
+
+            chart.data.datasets[0].data = historicalData.map(d => ({ x: d.timestamp, y: d.temperature }));
+            chart.data.datasets[1].data = historicalData.map(d => ({ x: d.timestamp, y: d.humidity }));
+            chart.update();
+
+            document.querySelector('#history-table tbody').innerHTML =
+                historicalData.map(d => `
+                        <tr>
+                            <td>${d.deviceId}</td>
+                            <td>${d.temperature}</td>
+                            <td>${d.humidity}</td>
+                            <td>${new Date(d.timestamp).toLocaleString()}</td>
+                        </tr>
+                    `).join('');
+        }
+
+        function exportTableToCSV(filename = 'veriler.csv') {
+            const rows = Array.from(document.querySelectorAll("#history-table tr"));
+            const csv = rows.map(row => {
+                const cols = Array.from(row.querySelectorAll("th, td"));
+                return cols.map(col => `"${col.textContent.trim()}"`).join(",");
+            }).join("\n");
+
+            const blob = new Blob([csv], { type: "text/csv" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        const socket = io();
+        socket.on("new-data", (data) => {
+            console.log("📡 Yeni veri geldi:", data);
+            updateAll();
+        });
+
+        loadDeviceList();
+        updateAll();
+        setInterval(updateAll, 5000);
+    </script>
 </body>
 </html>
