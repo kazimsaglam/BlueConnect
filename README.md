@@ -60,4 +60,17 @@ Sensör verilerini sunar, analiz eder, filtreler ve dışa aktarmanı sağlar.
 
 ---
 
+## 🧑‍💼 Geliştirici Ekibi
+
+- **Kazim Sağlam** – Mobil Uygulama Geliştiricisi  
+  `Flutter`, `Bluetooth`, `IoT`, `Veri Gönderimi`
+
+- **Mehmet Utku Kuş** – Backend ve API Sorumlusu  
+  `Node.js`, `Express`, `MongoDB`, `Socket.IO`
+
+- **Serhat Tutar** – Web Arayüz Tasarımcısı  
+  `HTML/CSS`, `Chart.js`, `Bootstrap`, `Responsive Design`
+
+---
+
 ## 📷 Ekran Görüntüsü
