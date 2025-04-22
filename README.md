@@ -74,3 +74,6 @@ Sensör verilerini sunar, analiz eder, filtreler ve dışa aktarmanı sağlar.
 ---
 
 ## 📷 Ekran Görüntüsü
+![screenshot](https://github.com/kazimsaglam/BlueConnect/blob/main/Screenshots/ss1.png)
+![screenshot](https://github.com/kazimsaglam/BlueConnect/blob/main/Screenshots/ss2.png)
+![screenshot](https://github.com/kazimsaglam/BlueConnect/blob/main/Screenshots/ss3.png)
