@@ -110,8 +110,29 @@
                     { label: 'Nem', borderColor: '#3498db', data: [] }
                 ]
             },
-            options: { responsive: true, maintainAspectRatio: false }
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            displayFormats: {
+                                hour: 'HH:mm:ss',
+                                minute: 'HH:mm:ss',
+                                second: 'HH:mm:ss'
+                            },
+                            tooltipFormat: 'HH:mm:ss'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Zaman'
+                        }
+                    }
+                }
+            }
         });
+
 
         async function fetchData(endpoint = '/api/latest-data') {
             try {
