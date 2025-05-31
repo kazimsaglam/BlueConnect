@@ -16,13 +16,11 @@ dependencies:
   flutter_blue_plus: ^1.35.3
   gap: any
   fluttertoast: any
-
   http: ^0.13.6
-
+  flutter_local_notifications: ^17.0.0
+  shared_preferences: ^2.2.2
   permission_handler: ^11.3.0
-
   flutter_native_splash: ^2.4.5
-
   cupertino_icons: ^1.0.8
 
 

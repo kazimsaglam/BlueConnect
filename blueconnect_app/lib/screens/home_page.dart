@@ -3,8 +3,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'scan_page.dart';
 import '/services/web_service.dart';
+
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
 class HomePage extends StatefulWidget {
   final BluetoothCharacteristic dhtCharacteristic;
@@ -26,8 +29,11 @@ class _HomePageState extends State<HomePage> {
   late BluetoothCharacteristic _characteristic;
   double temperature = 0;
   int humidity = 0;
+  double feltTemperature = 0;
   double? lastSentTemperature;
   int? lastSentHumidity;
+  double? lastFeltNotified;
+  bool _notificationsEnabled = true;
   late bool _isDarkMode;
 
   DateTime? _connectedAt;
@@ -42,9 +48,18 @@ class _HomePageState extends State<HomePage> {
     _isDarkMode = widget.isDarkMode;
     _characteristic = widget.dhtCharacteristic;
     _connectedAt = DateTime.now();
+    _initializeNotifications();
     _startDurationTimer();
     _startNotify();
     _monitorConnection();
+  }
+
+  void _initializeNotifications() async {
+    const AndroidInitializationSettings androidInit =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const InitializationSettings initSettings =
+        InitializationSettings(android: androidInit);
+    await flutterLocalNotificationsPlugin.initialize(initSettings);
   }
 
   @override
@@ -82,11 +97,20 @@ class _HomePageState extends State<HomePage> {
         final decoded = jsonDecode(utf8.decode(value));
         final double newTemp = (decoded['temperature'] as num).toDouble();
         final int newHum = (decoded['humidity'] as num).toInt();
+        final double newFelt = (newTemp - ((100 - newHum) / 5)).clamp(-100, 100);
 
         setState(() {
           temperature = newTemp;
           humidity = newHum;
+          feltTemperature = newFelt;
         });
+
+        if (_notificationsEnabled &&
+            (lastFeltNotified == null ||
+                (newFelt - lastFeltNotified!).abs() >= 1.0)) {
+          lastFeltNotified = newFelt;
+          _showNotification(newTemp, newFelt);
+        }
 
         if (lastSentTemperature != newTemp || lastSentHumidity != newHum) {
           lastSentTemperature = newTemp;
@@ -107,6 +131,25 @@ class _HomePageState extends State<HomePage> {
         debugPrint('Veri çözümleme hatası: $e');
       }
     });
+  }
+
+  Future<void> _showNotification(double temp, double felt) async {
+    final flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+    const androidDetails = AndroidNotificationDetails(
+      'blueconnect_channel',
+      'BlueConnect Bildirimleri',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+
+    const notifDetails = NotificationDetails(android: androidDetails);
+
+    await flutterLocalNotificationsPlugin.show(
+      0,
+      'Ortam Güncellendi',
+      'Sıcaklık: ${temp.toStringAsFixed(1)}°C, Hissedilen: ${felt.toStringAsFixed(1)}°C',
+      notifDetails,
+    );
   }
 
   void _startDurationTimer() {
@@ -176,16 +219,44 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Color _getTemperatureColor(double value) {
-    if (value < 20) return Colors.blueAccent;
-    if (value < 35) return Colors.green;
-    return Colors.redAccent;
-  }
-
-  Color _getHumidityColor(int value) {
-    if (value < 30) return Colors.blueAccent;
-    if (value < 70) return Colors.green;
-    return Colors.redAccent;
+  Widget _buildSwitchCard() {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("🌙 Karanlık Tema"),
+                Switch(
+                  value: _isDarkMode,
+                  onChanged: (value) {
+                    setState(() => _isDarkMode = value);
+                    widget.onToggleTheme(value);
+                  },
+                ),
+              ],
+            ),
+            const Divider(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("🔔 Bildirimler"),
+                Switch(
+                  value: _notificationsEnabled,
+                  onChanged: (value) {
+                    setState(() => _notificationsEnabled = value);
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildSensorCard({
@@ -321,42 +392,40 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Color _getTemperatureColor(double value) {
+    if (value < 20) return Colors.blueAccent;
+    if (value < 35) return Colors.green;
+    return Colors.redAccent;
+  }
+
+  Color _getHumidityColor(int value) {
+    if (value < 30) return Colors.blueAccent;
+    if (value < 70) return Colors.green;
+    return Colors.redAccent;
+  }
+
+  Color _getFeltColor(double value) {
+    if (value < 20) return Colors.blueAccent;
+    if (value < 35) return Colors.green;
+    return Colors.redAccent;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final feelsLike = (temperature + humidity * 0.05);
+
     return Scaffold(
       appBar: AppBar(
-        title: const Row(
-          children: [
-            Icon(Icons.bluetooth_connected),
-            SizedBox(width: 8),
-            Text('BlueConnect - Bağlı'),
-          ],
-        ),
-        actions: [
-          Row(
-            children: [
-              const Icon(Icons.light_mode),
-              Switch(
-                value: _isDarkMode,
-                onChanged: (value) {
-                  setState(() => _isDarkMode = value);
-                  widget.onToggleTheme(value);
-                },
-              ),
-              const Icon(Icons.dark_mode),
-              const SizedBox(width: 8),
-            ],
-          ),
-        ],
+        title: const Text('BlueConnect - Bağlı'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            _buildSwitchCard(),
             _buildDeviceInfo(),
 
-            // İlk veri gelmeden önce gösterilecek yükleniyor kısmı
             if (temperature == 0 && humidity == 0)
               const Center(
                 child: Column(
@@ -379,6 +448,12 @@ class _HomePageState extends State<HomePage> {
                 label: "Nem",
                 color: _getHumidityColor(humidity),
                 valueText: "$humidity %",
+              ),
+              _buildSensorCard(
+              icon: Icons.device_thermostat,
+              label: "Hissedilen Sıcaklık",
+              color: _getFeltColor(feelsLike),
+              valueText: "${feelsLike.toStringAsFixed(1)} °C",
               ),
             ],
 

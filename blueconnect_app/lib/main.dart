@@ -1,10 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'screens/scan_page.dart';
 
-void main() async{
-  await Future.delayed(Duration(seconds: 5));
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 
+void main() async{
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Bildirim yapılandırması
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/launcher_icon');
+
+  const InitializationSettings initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+  );
+
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+
+  await Future.delayed(Duration(seconds: 5));
   FlutterNativeSplash.remove();
 
   runApp(const BlueConnectApp());
