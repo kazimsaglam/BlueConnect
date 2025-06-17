@@ -47,9 +47,7 @@ app.get("/", (req, res) => {
 app.post('/api/sensor-data', async (req, res) => {
     try {
         const { deviceId, deviceName, temperature, humidity, timestamp } = req.body;
-        
-        let felt_temperature;
-        
+
         const collection = db.collection('sensor_readings');
         await collection.insertOne({
             deviceId,
@@ -58,10 +56,7 @@ app.post('/api/sensor-data', async (req, res) => {
             humidity: parseFloat(humidity),
             timestamp: new Date(timestamp)
         });
-        
-        felt_temperature = temperature + (0.33*Math.pow(10, 8.07131-(1730.63/(233.426+temperature)))) - 4;
-        felt_temperature = felt_temperature.toFixed(1);
-        
+
         console.log(`[✓] Veri kaydedildi: ${deviceId}`);
 
         // 🎯 WebSocket ile canlı veri yayını
