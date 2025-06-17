@@ -88,7 +88,6 @@
                             <th>Cihaz</th>
                             <th>Sıcaklık (°C)</th>
                             <th>Nem (%)</th>
-                            <th>Hissedilen Sıcaklık (°C)</th>
                             <th>Zaman</th>
                         </tr>
                     </thead>
@@ -108,8 +107,7 @@
             data: {
                 datasets: [
                     { label: 'Sıcaklık', borderColor: '#e74c3c', data: [] },
-                    { label: 'Nem', borderColor: '#3498db', data: [] },
-                    { label: 'Hissedilen Sıcaklık', borderColor: '#17a2b8', data: [] }
+                    { label: 'Nem', borderColor: '#3498db', data: [] }
                 ]
             },
             options: { responsive: true, maintainAspectRatio: false }
@@ -164,14 +162,12 @@
                                 </div>
                                 <div class="sensor-value text-danger">${d.temperature}°C</div>
                                 <div class="sensor-value text-primary">${d.humidity}%</div>
-                                <div class="sensor-value text-info">${d.felt_temperature}°C</div>
                             </div>
                         `;
                 }).join('');
 
             chart.data.datasets[0].data = historicalData.map(d => ({ x: d.timestamp, y: d.temperature }));
             chart.data.datasets[1].data = historicalData.map(d => ({ x: d.timestamp, y: d.humidity }));
-            chart.data.datasets[2].data = historicalData.map(d => ({ x: d.timestamp, y: d.felt_temperature }));
             chart.update();
 
             document.querySelector('#history-table tbody').innerHTML =
@@ -180,7 +176,6 @@
                             <td>${d.deviceId}</td>
                             <td>${d.temperature}</td>
                             <td>${d.humidity}</td>
-                            <td>${d.felt_temperature}</td>
                             <td>${new Date(d.timestamp).toLocaleString()}</td>
                         </tr>
                     `).join('');
