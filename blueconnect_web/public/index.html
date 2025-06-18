@@ -88,7 +88,7 @@
                             <th>Cihaz</th>
                             <th>Sıcaklık (°C)</th>
                             <th>Nem (%)</th>
-                            <th>Zaman</th>
+                            <th>Saat</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -176,7 +176,9 @@
                             <td>${d.deviceId}</td>
                             <td>${d.temperature}</td>
                             <td>${d.humidity}</td>
-                            <td>${new Date(d.timestamp).toLocaleString()}</td>
+                            <td>${new Date(d.timestamp)
+        .toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</td>
+
                         </tr>
                     `).join('');
         }
