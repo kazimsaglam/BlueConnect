@@ -1,58 +1,67 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BlueConnect Panel</title>
+    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font‑Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        /* —— Renk Paleti —— */
         :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
+            --bc-primary: #0d6efd;        /* Bootstrap primary */
+            --bc-bg:      #121212;        /* Koyu arka plan */
+            --bc-card:    #1e1e2f;        /* Kart arka planı */
+            --bc-text:    #f5f5f5;        /* Ana metin */
+            --bc-muted:   #9ca3af;        /* Sönük metin */
+            --bc-danger:  #e74c3c;
+            --bc-info:    #3498db;
         }
 
         body {
-            background: #f8f9fa;
+            background: var(--bc-bg);
+            color: var(--bc-text);
         }
+
+        h1,h5 { color: var(--bc-text); }
 
         .card {
             border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background-color: var(--bc-card);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
         }
 
         .sensor-value {
             font-size: 1.5rem;
             font-weight: bold;
-            color: var(--primary-color);
         }
 
-        #chart-container {
-            height: 400px;
-        }
+        #chart-container { height: 400px; }
 
+        /* Yüksek sıcaklık kartı */
         .device-card.alert {
-            background-color: #ffe6e6;
-            border-left: 5px solid red;
+            background-color: rgba(231, 76, 60, 0.15);
+            border-left: 5px solid var(--bc-danger);
             animation: blink 1s infinite alternate;
         }
-
         @keyframes blink {
-            from {
-                background-color: #ffe6e6;
-            }
-
-            to {
-                background-color: #ffb3b3;
-            }
+            from { background-color: rgba(231, 76, 60, 0.15); }
+            to   { background-color: rgba(231, 76, 60, 0.35); }
         }
+
+        /* Tablo */
+        table thead th { color: var(--bc-primary); }
+        table tbody tr:nth-child(even) { background-color: rgba(255,255,255,0.03); }
     </style>
 </head>
 <body class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3"><i class="fas fa-microchip"></i> BlueConnect Sensör Paneli</h1>
-        <div>
-            <select id="device-filter" class="form-select me-2" onchange="updateAll()">
+    <!-- Üst Bar -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <h1 class="h3 m-0"><i class="fas fa-microchip me-2"></i>BlueConnect Sensör Paneli</h1>
+        <div class="d-flex flex-column flex-sm-row gap-2 w-100 w-md-auto">
+            <select id="device-filter" class="form-select" onchange="updateAll()">
                 <option value="">Tüm Cihazlar</option>
             </select>
             <input type="date" id="date-filter" class="form-control" onchange="updateAll()">
@@ -60,29 +69,30 @@
     </div>
 
     <div class="row g-4">
+        <!-- Anlık Veriler -->
         <div class="col-md-4">
-            <div class="card p-3">
-                <h5 class="mb-3"><i class="fas fa-clock"></i> Anlık Veriler</h5>
+            <div class="card p-3 h-100">
+                <h5 class="mb-3"><i class="fas fa-clock me-2"></i>Anlık Veriler</h5>
                 <div id="realtime-data"></div>
             </div>
         </div>
+        <!-- Grafik -->
         <div class="col-md-8">
-            <div class="card p-3">
-                <h5 class="mb-3"><i class="fas fa-chart-line"></i> Geçmiş Veri Analizi</h5>
-                <div id="chart-container">
-                    <canvas id="sensor-chart"></canvas>
-                </div>
+            <div class="card p-3 h-100">
+                <h5 class="mb-3"><i class="fas fa-chart-line me-2"></i>Geçmiş Veri Analizi</h5>
+                <div id="chart-container"><canvas id="sensor-chart"></canvas></div>
             </div>
         </div>
+        <!-- Tablo -->
         <div class="col-12">
             <div class="card p-3">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0"><i class="fas fa-table"></i> Veri Geçmişi</h5>
-                    <button class="btn btn-success" onclick="exportTableToCSV()">
-                        <i class="fas fa-file-csv"></i> CSV İndir
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-column flex-sm-row gap-2">
+                    <h5 class="mb-0"><i class="fas fa-table me-2"></i>Veri Geçmişi</h5>
+                    <button class="btn btn-success d-inline-flex align-items-center gap-2" onclick="exportTableToCSV()">
+                        <i class="fas fa-file-csv"></i><span>CSV İndir</span>
                     </button>
                 </div>
-                <table class="table" id="history-table">
+                <table class="table table-hover mb-0" id="history-table">
                     <thead>
                         <tr>
                             <th>Cihaz</th>
@@ -97,138 +107,138 @@
         </div>
     </div>
 
+    <!-- Kitaplıklar -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+
     <script>
+        /* ——— Chart ——— */
         const ctx = document.getElementById('sensor-chart').getContext('2d');
         const chart = new Chart(ctx, {
             type: 'line',
             data: {
                 datasets: [
-                    { label: 'Sıcaklık', borderColor: '#e74c3c', data: [] },
-                    { label: 'Nem', borderColor: '#3498db', data: [] }
+                    { label: 'Sıcaklık', borderColor: '#e74c3c', backgroundColor: 'transparent', data: [] },
+                    { label: 'Nem',       borderColor: '#3498db', backgroundColor: 'transparent', data: [] }
                 ]
             },
-            options: { 
-                responsive: true, 
-                maintainAspectRatio: false 
-            
-             scales: {
-      x: {
-        type: 'time',
-        time: {
-          unit: 'hour',          
-          tooltipFormat: 'HH:mm',    
-          displayFormats: { hour: 'HH:mm' }
-        },
-        ticks: {
-          callback: (value) =>
-            new Date(value).toLocaleTimeString('tr-TR',
-              { hour: '2-digit', minute: '2-digit' })
-        }
-      }
-    }
-  }
-});
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: '#ffffff' } }
+                },
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'hour',
+                            tooltipFormat: 'HH:mm',
+                            displayFormats: { hour: 'HH:mm' }
+                        },
+                        ticks: {
+                            color: '#bbbbbb',
+                            callback: value => new Date(value).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+                        },
+                        grid: { color: 'rgba(255,255,255,0.05)' }
+                    },
+                    y: {
+                        ticks: { color: '#bbbbbb' },
+                        grid: { color: 'rgba(255,255,255,0.05)' }
+                    }
+                }
+            }
+        });
 
-        async function fetchData(endpoint = '/api/latest-data') {
+        /* ——— Fetch yardımcıları ——— */
+        async function fetchData(endpoint) {
             try {
                 const res = await fetch(endpoint);
                 return await res.json();
             } catch (err) {
-                console.error('Hata:', err);
+                console.error('API hatası:', err);
+                return {};
             }
         }
 
+        /* ——— Aygıt listesi doldur ——— */
         async function loadDeviceList() {
+            const select = document.getElementById('device-filter');
+            select.innerHTML = '<option value="">Tüm Cihazlar</option>';
             try {
-                const res = await fetch('/api/device-list');
-                const devices = await res.json();
-                const select = document.getElementById("device-filter");
-                select.innerHTML = '<option value="">Tüm Cihazlar</option>';
-                devices.filter(id => id && id.trim() !== "")
-                    .forEach(id => {
-                        const opt = document.createElement("option");
-                        opt.value = id;
-                        opt.textContent = id;
-                        select.appendChild(opt);
-                    });
-            } catch (err) {
-                console.error("Cihaz listesi alınamadı", err);
-            }
+                const devices = await fetchData('/api/device-list');
+                (devices || []).filter(id => id?.trim()).forEach(id => {
+                    const opt = document.createElement('option');
+                    opt.value = id;
+                    opt.textContent = id;
+                    select.appendChild(opt);
+                });
+            } catch {}
         }
 
+        /* ——— Verileri yenile ——— */
         async function updateAll() {
-            const selectedDeviceId = document.getElementById("device-filter").value;
-            const selectedDate = document.getElementById("date-filter").value;
-            const startDate = new Date(selectedDate);
-            const endDate = new Date(selectedDate);
-            endDate.setHours(23, 59, 59, 999);
+            const deviceId = document.getElementById('device-filter').value;
+            const dateStr  = document.getElementById('date-filter').value;
+            const start    = dateStr ? new Date(dateStr) : new Date();
+            const end      = new Date(start);
+            end.setHours(23,59,59,999);
 
-            const query = `?deviceId=${selectedDeviceId}&startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`;
-            const latestData = await fetchData('/api/latest-data');
-            const historicalData = await fetchData('/api/historical-data' + query);
+            const query = `?deviceId=${deviceId}&startDate=${start.toISOString()}&endDate=${end.toISOString()}`;
+            const [latestData, historicalData] = await Promise.all([
+                fetchData('/api/latest-data'),
+                fetchData('/api/historical-data' + query)
+            ]);
 
+            /* ——— Anlık Veriler bölümü ——— */
             document.getElementById('realtime-data').innerHTML =
-                Object.entries(latestData).map(([id, d]) => {
-                    const isHot = d.temperature > 30;
-                    return `
-                            <div class="device-card mb-3 p-3 rounded ${isHot ? 'alert' : 'bg-light'}">
-                                <div class="d-flex justify-content-between">
-                                    <h6>${d.deviceName || id}</h6>
-                                    <small>${new Date(d.timestamp).toLocaleTimeString()}</small>
+                Object.entries(latestData || {}).map(([id, d]) => {
+                    const hot = d.temperature > 30;
+                    return `<div class="device-card mb-3 p-3 rounded ${hot ? 'alert' : ''}">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <h6 class="mb-0">${d.deviceName || id}</h6>
+                                    <small class="text-muted">${new Date(d.timestamp).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</small>
                                 </div>
                                 <div class="sensor-value text-danger">${d.temperature}°C</div>
-                                <div class="sensor-value text-primary">${d.humidity}%</div>
-                            </div>
-                        `;
+                                <div class="sensor-value text-info">${d.humidity}%</div>
+                            </div>`;
                 }).join('');
 
-            chart.data.datasets[0].data = historicalData.map(d => ({ x: d.timestamp, y: d.temperature }));
-            chart.data.datasets[1].data = historicalData.map(d => ({ x: d.timestamp, y: d.humidity }));
+            /* ——— Grafik verisi ——— */
+            chart.data.datasets[0].data = (historicalData || []).map(d => ({ x: d.timestamp, y: d.temperature }));
+            chart.data.datasets[1].data = (historicalData || []).map(d => ({ x: d.timestamp, y: d.humidity }));
             chart.update();
 
-            document.querySelector('#history-table tbody').innerHTML =
-    historicalData.map(d => `
-        <tr>
-            <td>${d.deviceName || d.deviceId}</td>
-            <td>${d.temperature}</td>
-            <td>${d.humidity}</td>
-            <td>${new Date(d.timestamp)
-                    .toLocaleTimeString('tr-TR',
-                        { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</td>
-        </tr>
-    `).join('');
+            /* ——— Tablo ——— */
+            const tbody = document.querySelector('#history-table tbody');
+            tbody.innerHTML = (historicalData || []).map(d =>
+                `<tr>
+                    <td>${d.deviceName || d.deviceId}</td>
+                    <td>${d.temperature}</td>
+                    <td>${d.humidity}</td>
+                    <td>${new Date(d.timestamp).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</td>
+                 </tr>`).join('');
         }
 
+        /* ——— CSV dışa aktarma ——— */
         function exportTableToCSV(filename = 'veriler.csv') {
-            const rows = Array.from(document.querySelectorAll("#history-table tr"));
-            const csv = rows.map(row => {
-                const cols = Array.from(row.querySelectorAll("th, td"));
-                return cols.map(col => `"${col.textContent.trim()}"`).join(",");
-            }).join("\n");
-
-            const blob = new Blob([csv], { type: "text/csv" });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            const rows = Array.from(document.querySelectorAll('#history-table tr'));
+            const csv  = rows.map(row => Array.from(row.children).map(c => '"'+c.textContent.trim()+'"').join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const link = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: filename });
+            document.body.appendChild(link); link.click(); link.remove();
         }
 
+        /* ——— Gerçek‑zamanlı soket ——— */
         const socket = io();
-        socket.on("new-data", (data) => {
-            console.log("📡 Yeni veri geldi:", data);
-            updateAll();
-        });
+        socket.on('new-data', () => updateAll());
 
+        /* ——— Başlat ——— */
         loadDeviceList();
         updateAll();
         setInterval(updateAll, 5000);
     </script>
 </body>
 </html>
-
