@@ -9,55 +9,45 @@
     <!-- Font‑Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* —— Renk Paleti —— */
+        /* —— Renk Paleti (bir tık daha aydınlık) —— */
         :root {
-            --bc-primary: #0d6efd;        /* Bootstrap primary */
-            --bc-bg:      #121212;        /* Koyu arka plan */
-            --bc-card:    #1e1e2f;        /* Kart arka planı */
-            --bc-text:    #f5f5f5;        /* Ana metin */
-            --bc-muted:   #9ca3af;        /* Sönük metin */
+            --bc-primary: #0d6efd;
+            --bc-bg:      #181b24;   /* daha açık koyu */
+            --bc-card:    #24273b;   /* kart arka planı */
+            --bc-text:    #f1f1f1;
+            --bc-muted:   #a6aab9;
             --bc-danger:  #e74c3c;
             --bc-info:    #3498db;
         }
 
-        body {
-            background: var(--bc-bg);
-            color: var(--bc-text);
-        }
-
+        body { background: var(--bc-bg); color: var(--bc-text); }
         h1,h5 { color: var(--bc-text); }
 
         .card {
-            border-radius: 15px;
+            border-radius: 14px;
             background-color: var(--bc-card);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.35);
         }
 
-        .sensor-value {
-            font-size: 1.5rem;
-            font-weight: bold;
-        }
-
+        .sensor-value { font-size: 1.4rem; font-weight: 700; }
         #chart-container { height: 400px; }
 
-        /* Yüksek sıcaklık kartı */
         .device-card.alert {
-            background-color: rgba(231, 76, 60, 0.15);
+            background-color: rgba(231, 76, 60, 0.18);
             border-left: 5px solid var(--bc-danger);
             animation: blink 1s infinite alternate;
         }
         @keyframes blink {
-            from { background-color: rgba(231, 76, 60, 0.15); }
-            to   { background-color: rgba(231, 76, 60, 0.35); }
+            from { background-color: rgba(231, 76, 60, 0.18); }
+            to   { background-color: rgba(231, 76, 60, 0.32); }
         }
 
-        /* Tablo */
-        table thead th { color: var(--bc-primary); }
-        table tbody tr:nth-child(even) { background-color: rgba(255,255,255,0.03); }
+        table thead th  { color: var(--bc-primary); }
+        table tbody tr:nth-child(even) { background-color: rgba(255,255,255,0.04); }
     </style>
 </head>
 <body class="container py-4">
-    <!-- Üst Bar -->
+    <!-- Üst Bar -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <h1 class="h3 m-0"><i class="fas fa-microchip me-2"></i>BlueConnect Sensör Paneli</h1>
         <div class="d-flex flex-column flex-sm-row gap-2 w-100 w-md-auto">
@@ -98,7 +88,7 @@
                             <th>Cihaz</th>
                             <th>Sıcaklık (°C)</th>
                             <th>Nem (%)</th>
-                            <th>Saat</th>
+                            <th>Tarih & Saat</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -107,28 +97,38 @@
         </div>
     </div>
 
-    <!-- Kitaplıklar -->
+    <!-- Kitaplıklar -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 
     <script>
-        /* ——— Chart ——— */
+        /* —— Renkli gradient için yardımcı —— */
         const ctx = document.getElementById('sensor-chart').getContext('2d');
+        const gradientTemp = ctx.createLinearGradient(0, 0, 0, 400);
+        gradientTemp.addColorStop(0, 'rgba(231,76,60,0.5)');
+        gradientTemp.addColorStop(1, 'rgba(231,76,60,0.05)');
+        const gradientHum  = ctx.createLinearGradient(0, 0, 0, 400);
+        gradientHum.addColorStop(0, 'rgba(52,152,219,0.5)');
+        gradientHum.addColorStop(1, 'rgba(52,152,219,0.05)');
+
+        /* —— Chart —— */
         const chart = new Chart(ctx, {
             type: 'line',
             data: {
                 datasets: [
-                    { label: 'Sıcaklık', borderColor: '#e74c3c', backgroundColor: 'transparent', data: [] },
-                    { label: 'Nem',       borderColor: '#3498db', backgroundColor: 'transparent', data: [] }
+                    { label: 'Sıcaklık', borderColor: '#e74c3c', backgroundColor: gradientTemp, data: [], tension: 0.35, pointRadius: 0, fill: true },
+                    { label: 'Nem',       borderColor: '#3498db', backgroundColor: gradientHum,  data: [], tension: 0.35, pointRadius: 0, fill: true }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
                 plugins: {
-                    legend: { labels: { color: '#ffffff' } }
+                    legend: { labels: { color: '#f1f1f1' } },
+                    tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y}` } }
                 },
                 scales: {
                     x: {
@@ -139,106 +139,102 @@
                             displayFormats: { hour: 'HH:mm' }
                         },
                         ticks: {
-                            color: '#bbbbbb',
-                            callback: value => new Date(value).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+                            color: '#c0c4d1',
+                            autoSkip: true,
+                            maxTicksLimit: 8,
+                            callback: value => new Date(value).toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit', timeZone:'Europe/Istanbul' })
                         },
                         grid: { color: 'rgba(255,255,255,0.05)' }
                     },
                     y: {
-                        ticks: { color: '#bbbbbb' },
+                        ticks: { color: '#c0c4d1' },
                         grid: { color: 'rgba(255,255,255,0.05)' }
                     }
                 }
             }
         });
 
-        /* ——— Fetch yardımcıları ——— */
+        /* —— Fetch yardımcı —— */
         async function fetchData(endpoint) {
             try {
                 const res = await fetch(endpoint);
                 return await res.json();
-            } catch (err) {
-                console.error('API hatası:', err);
-                return {};
-            }
+            } catch(e){ console.error('API hatası', e); return; }
         }
 
-        /* ——— Aygıt listesi doldur ——— */
+        /* —— Cihaz listesi —— */
         async function loadDeviceList() {
             const select = document.getElementById('device-filter');
             select.innerHTML = '<option value="">Tüm Cihazlar</option>';
-            try {
-                const devices = await fetchData('/api/device-list');
-                (devices || []).filter(id => id?.trim()).forEach(id => {
-                    const opt = document.createElement('option');
-                    opt.value = id;
-                    opt.textContent = id;
-                    select.appendChild(opt);
-                });
-            } catch {}
+            const devices = await fetchData('/api/device-list') || [];
+            devices.forEach(item => {
+                const id   = typeof item === 'string' ? item : (item.id || item.deviceId);
+                const name = typeof item === 'string' ? item : (item.deviceName || item.name || id);
+                const opt  = document.createElement('option');
+                opt.value = id;   // sorguda id kullanıyoruz
+                opt.textContent = name;
+                select.appendChild(opt);
+            });
         }
 
-        /* ——— Verileri yenile ——— */
-        async function updateAll() {
+        /* —— Güncelle —— */
+        async function updateAll(){
             const deviceId = document.getElementById('device-filter').value;
             const dateStr  = document.getElementById('date-filter').value;
             const start    = dateStr ? new Date(dateStr) : new Date();
             const end      = new Date(start);
             end.setHours(23,59,59,999);
-
             const query = `?deviceId=${deviceId}&startDate=${start.toISOString()}&endDate=${end.toISOString()}`;
+
             const [latestData, historicalData] = await Promise.all([
                 fetchData('/api/latest-data'),
-                fetchData('/api/historical-data' + query)
+                fetchData('/api/historical-data'+query)
             ]);
 
-            /* ——— Anlık Veriler bölümü ——— */
-            document.getElementById('realtime-data').innerHTML =
-                Object.entries(latestData || {}).map(([id, d]) => {
-                    const hot = d.temperature > 30;
-                    return `<div class="device-card mb-3 p-3 rounded ${hot ? 'alert' : ''}">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <h6 class="mb-0">${d.deviceName || id}</h6>
-                                    <small class="text-muted">${new Date(d.timestamp).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</small>
-                                </div>
-                                <div class="sensor-value text-danger">${d.temperature}°C</div>
-                                <div class="sensor-value text-info">${d.humidity}%</div>
-                            </div>`;
-                }).join('');
+            /* Anlık veriler */
+            document.getElementById('realtime-data').innerHTML = Object.entries(latestData || {}).map(([id, d]) => {
+                const hot = d.temperature>30;
+                return `<div class="device-card mb-3 p-3 rounded ${hot ? 'alert':''}">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <h6 class="mb-0">${d.deviceName || id}</h6>
+                                <small class="text-muted">${new Intl.DateTimeFormat('tr-TR',{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:'Europe/Istanbul'}).format(new Date(d.timestamp))}</small>
+                            </div>
+                            <div class="sensor-value text-danger">${d.temperature}°C</div>
+                            <div class="sensor-value text-info">${d.humidity}%</div>
+                        </div>`;
+            }).join('');
 
-            /* ——— Grafik verisi ——— */
-            chart.data.datasets[0].data = (historicalData || []).map(d => ({ x: d.timestamp, y: d.temperature }));
-            chart.data.datasets[1].data = (historicalData || []).map(d => ({ x: d.timestamp, y: d.humidity }));
+            /* Grafik */
+            chart.data.datasets[0].data = (historicalData||[]).map(d=>({x:d.timestamp, y:d.temperature}));
+            chart.data.datasets[1].data = (historicalData||[]).map(d=>({x:d.timestamp, y:d.humidity}));
             chart.update();
 
-            /* ——— Tablo ——— */
+            /* Tablo */
             const tbody = document.querySelector('#history-table tbody');
-            tbody.innerHTML = (historicalData || []).map(d =>
-                `<tr>
-                    <td>${d.deviceName || d.deviceId}</td>
-                    <td>${d.temperature}</td>
-                    <td>${d.humidity}</td>
-                    <td>${new Date(d.timestamp).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</td>
-                 </tr>`).join('');
+            tbody.innerHTML = (historicalData||[]).map(d=>`<tr>
+                <td>${d.deviceName || d.deviceId}</td>
+                <td>${d.temperature}</td>
+                <td>${d.humidity}</td>
+                <td>${new Intl.DateTimeFormat('tr-TR',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:'Europe/Istanbul'}).format(new Date(d.timestamp))}</td>
+            </tr>`).join('');
         }
 
-        /* ——— CSV dışa aktarma ——— */
-        function exportTableToCSV(filename = 'veriler.csv') {
-            const rows = Array.from(document.querySelectorAll('#history-table tr'));
-            const csv  = rows.map(row => Array.from(row.children).map(c => '"'+c.textContent.trim()+'"').join(',')).join('\n');
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const link = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: filename });
-            document.body.appendChild(link); link.click(); link.remove();
+        /* — CSV — */
+        function exportTableToCSV(filename='veriler.csv'){
+            const rows=[...document.querySelectorAll('#history-table tr')];
+            const csv=rows.map(r=>[...r.children].map(c=>`"${c.textContent.trim()}"`).join(',')).join('\n');
+            const link=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([csv],{type:'text/csv'})),download:filename});
+            document.body.append(link); link.click(); link.remove();
         }
 
-        /* ——— Gerçek‑zamanlı soket ——— */
-        const socket = io();
-        socket.on('new-data', () => updateAll());
+        /* — Soket — */
+        const socket=io();
+        socket.on('new-data',()=>updateAll());
 
-        /* ——— Başlat ——— */
+        /* — Başlat — */
         loadDeviceList();
         updateAll();
-        setInterval(updateAll, 5000);
+        setInterval(updateAll,5000);
     </script>
 </body>
 </html>
