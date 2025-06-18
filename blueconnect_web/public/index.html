@@ -11,14 +11,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <style>
-        :root{
-            --bc-primary:#0d6efd; --bc-text:#f1f1f1; --bc-danger:#e74c3c; --bc-info:#3498db;
-        }
+        :root{ --bc-primary:#0d6efd; --bc-text:#f1f1f1; --bc-danger:#e74c3c; --bc-info:#3498db; }
         body{background:#1a1a1a;color:var(--bc-text);} h1,h5{color:var(--bc-text);}
-        .card{border-radius:14px;background:linear-gradient(135deg,#2a2a2a,#343434);box-shadow:0 6px 12px rgba(0,0,0,.35)}
+        .card{border-radius:14px;background:linear-gradient(135deg,#2a2a2a,#343434);box-shadow:0 6px 12px rgba(0,0,0,.35);}
         .sensor-value{font-size:1.4rem;font-weight:700;} #chart-container{height:400px;}
         .device-card.alert{background:rgba(231,76,60,.18);border-left:5px solid var(--bc-danger);animation:blink 1s infinite alternate;}
-        @keyframes blink{from{background:rgba(231,76,60,.18);}to{background:rgba(231,76,60,.32);}}
+        @keyframes blink{from{background:rgba(231,76,60,.18);}  to{background:rgba(231,76,60,.32);} }
         table thead th{color:var(--bc-primary);} table tbody tr:nth-child(even){background:rgba(255,255,255,.04);}
         .filter-sm .form-select,.filter-sm .form-control{padding:.25rem .5rem;font-size:.875rem;height:calc(1.5em + .5rem + 2px);}
     </style>
@@ -28,7 +26,9 @@
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3 filter-sm">
         <h1 class="h3 m-0"><i class="fas fa-microchip me-2"></i>BlueConnect Sensör Paneli</h1>
         <div class="d-flex flex-column flex-sm-row gap-2 w-100 w-md-auto">
-            <select id="device-filter" class="form-select" onchange="updateAll()"><option value="">Tüm Cihazlar</option></select>
+            <select id="device-filter" class="form-select" onchange="updateAll()">
+                <option value="">Tüm Cihazlar</option>
+            </select>
             <input type="date" id="date-filter" class="form-control" onchange="updateAll()">
         </div>
     </div>
@@ -76,10 +76,10 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 
     <script>
-        /* –3 saat kayan zaman */
-        const shifted = ts => new Date(new Date(ts).getTime() - 3*60*60*1000);
+        /* ——— 3 saat geri çevir ——— */
+        const localTime = ts => new Date(new Date(ts).getTime() - 3*60*60*1000);
 
-        /* —— Grafik —— */
+        /* ——— Grafik ——— */
         const ctx = document.getElementById('sensor-chart').getContext('2d');
         const gTemp = ctx.createLinearGradient(0,0,0,400); gTemp.addColorStop(0,'rgba(231,76,60,.45)'); gTemp.addColorStop(1,'rgba(231,76,60,.05)');
         const gHum  = ctx.createLinearGradient(0,0,0,400); gHum .addColorStop(0,'rgba(52,152,219,.45)'); gHum .addColorStop(1,'rgba(52,152,219,.05)');
@@ -88,98 +88,87 @@
             type:'line',
             data:{datasets:[
                 {label:'Sıcaklık (°C)',borderColor:'#e74c3c',backgroundColor:gTemp,borderWidth:2,tension:.3,pointRadius:0,fill:true,data:[]},
-                {label:'Nem (%)',     borderColor:'#3498db',backgroundColor:gHum ,borderWidth:2,tension:.3,pointRadius:0,fill:true,data:[]}
+                {label:'Nem (%)',      borderColor:'#3498db',backgroundColor:gHum ,borderWidth:2,tension:.3,pointRadius:0,fill:true,data:[]}
             ]},
             options:{
                 responsive:true,maintainAspectRatio:false,
                 interaction:{intersect:false,mode:'index'},
                 plugins:{legend:{labels:{color:'#f1f1f1',boxWidth:12}}},
                 scales:{
-                    x:{
-                        type:'time',
-                        time:{unit:'hour',tooltipFormat:'HH:mm'},
-                        ticks:{
-                            color:'#c0c4d1',autoSkip:true,maxTicksLimit:10,
-                            callback:v=>toLocal(v).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})
-                        },
-                        grid:{color:'rgba(255,255,255,.05)'}
-                    },
+                    x:{type:'time',time:{unit:'hour',tooltipFormat:'HH:mm'},
+                        ticks:{color:'#c0c4d1',autoSkip:true,maxTicksLimit:10,
+                               callback:v=>localTime(v).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})},
+                        grid:{color:'rgba(255,255,255,.05)'}},
                     y:{ticks:{color:'#c0c4d1'},grid:{color:'rgba(255,255,255,.05)'}}
                 }
             }
         });
 
-        /* —— Basit fetch —— */
-        const fetchData = async ep => {
-            try{ return await (await fetch(ep)).json(); }
-            catch(e){ console.error('API',e); return []; }
-        };
+        /* ——— Fetch ——— */
+        const fetchData = async ep => { try{ return await (await fetch(ep)).json(); }catch(e){ console.error(e); return []; } };
 
-        /* —— Cihaz listesi —— */
+        /* ——— Cihaz listesi ——— */
         async function loadDeviceList(){
-            const sel=document.getElementById('device-filter');
-            sel.innerHTML='<option value="">Tüm Cihazlar</option>';
-            for(const d of (await fetchData('/api/device-list'))){
+            const sel = document.getElementById('device-filter');
+            sel.innerHTML = '<option value="">Tüm Cihazlar</option>';
+            for(const d of await fetchData('/api/device-list')){
                 const id   = typeof d==='string'?d:(d.deviceId||d.id);
                 const name = typeof d==='string'?d:(d.deviceName||d.name||id);
-                const opt=document.createElement('option'); opt.value=id; opt.textContent=name; sel.appendChild(opt);
+                sel.insertAdjacentHTML('beforeend',`<option value="${id}">${name}</option>`);
             }
         }
 
-        /* —— Ana güncelleme —— */
+        /* ——— Ana güncelleme ——— */
         async function updateAll(){
-            const id  = document.getElementById('device-filter').value;
-            const ds  = document.getElementById('date-filter').value;
-            const s   = ds?new Date(ds):new Date();
-            const e   = new Date(s); e.setHours(23,59,59,999);
-            const q   = `?deviceId=${id}&startDate=${s.toISOString()}&endDate=${e.toISOString()}`;
+            const id = document.getElementById('device-filter').value;
+            const ds = document.getElementById('date-filter').value;
+            const start = ds ? new Date(ds) : new Date();
+            const end   = new Date(start); end.setHours(23,59,59,999);
+            const q = `?deviceId=${id}&startDate=${start.toISOString()}&endDate=${end.toISOString()}`;
 
-            const [latest,hist] = await Promise.all([
-                fetchData('/api/latest-data'), 
-                fetchData('/api/historical-data'+q)
-            ]);
+            const [latest,hist] = await Promise.all([ fetchData('/api/latest-data'), fetchData('/api/historical-data'+q) ]);
 
             /* — Anlık kartlar — */
             document.getElementById('realtime-data').innerHTML = Object.entries(latest||{})
-              .map(([key,d])=>`
+              .map(([k,d])=>`
                 <div class="device-card mb-3 p-3 rounded ${d.temperature>30?'alert':''}">
                     <div class="d-flex justify-content-between align-items-center mb-1">
-                        <h6 class="mb-0">${d.deviceName||key}</h6>
-                        <small class="text-muted">${toLocal(d.timestamp).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</small>
+                        <h6 class="mb-0">${d.deviceName||k}</h6>
+                        <small class="text-muted">${localTime(d.timestamp).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</small>
                     </div>
                     <div class="sensor-value text-danger">${d.temperature}°C</div>
                     <div class="sensor-value text-info">${d.humidity}%</div>
                 </div>`).join('');
 
             /* — Grafik — */
-            const asc=[...(hist||[])].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
-            chart.data.datasets[0].data = asc.map(d=>({x:toLocal(d.timestamp),y:d.temperature}));
-            chart.data.datasets[1].data = asc.map(d=>({x:toLocal(d.timestamp),y:d.humidity}));
+            const asc = [...(hist||[])].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+            chart.data.datasets[0].data = asc.map(d=>({x:localTime(d.timestamp),y:d.temperature}));
+            chart.data.datasets[1].data = asc.map(d=>({x:localTime(d.timestamp),y:d.humidity}));
             chart.update();
 
             /* — Tablo — */
-            document.querySelector('#history-table tbody').innerHTML = [...asc].reverse()
+            document.querySelector('#history-table tbody').innerHTML = asc.reverse()
               .map(d=>`<tr>
                     <td>${d.deviceName||d.deviceId}</td>
                     <td>${d.temperature}</td>
                     <td>${d.humidity}</td>
-                    <td>${toLocal(d.timestamp).toLocaleString('tr-TR',{year:'2-digit',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'})}</td>
+                    <td>${localTime(d.timestamp).toLocaleString('tr-TR',{year:'2-digit',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'})}</td>
                 </tr>`).join('');
         }
 
-        /* —— CSV — */
-        const exportTableToCSV = (fname='veriler.csv')=>{
-            const rows=[...document.querySelectorAll('#history-table tr')];
-            const csv=rows.map(r=>[...r.children].map(c=>`"${c.textContent.trim()}"`).join(',')).join('\n');
-            const blob=new Blob([csv],{type:'text/csv'});
-            const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(blob),download:fname});
+        /* ——— CSV ——— */
+        function exportTableToCSV(fname='veriler.csv'){
+            const rows = [...document.querySelectorAll('#history-table tr')];
+            const csv  = rows.map(r=>[...r.children].map(c=>`"${c.textContent.trim()}"`).join(',')).join('\n');
+            const blob = new Blob([csv],{type:'text/csv'});
+            const a    = Object.assign(document.createElement('a'),{href:URL.createObjectURL(blob),download:fname});
             document.body.append(a); a.click(); a.remove();
-        };
+        }
 
-        /* —— Soket — */
-        const socket=io(); socket.on('new-data',updateAll);
+        /* ——— Soket ——— */
+        const socket = io(); socket.on('new-data',updateAll);
 
-        /* —— Başlat —— */
+        /* ——— Başlat ——— */
         loadDeviceList();
         updateAll();
         setInterval(updateAll,5000);
