@@ -123,17 +123,33 @@ app.get('/api/historical-data', async (req, res) => {
     }
 });
 
-// 4. Cihaz Listesi Endpoint'i
+
+// 4. Cihaz Listesi Endpoint'i (isimlerle döner)
 app.get('/api/device-list', async (req, res) => {
     try {
-        const devices = await db.collection('sensor_readings').distinct('deviceId');
-        const validDevices = devices.filter(id => id && id.trim() !== "");
-        res.json(validDevices);
+        const collection = db.collection('sensor_readings');
+
+        const devices = await collection.aggregate([
+            {
+                $group: {
+                    _id: "$deviceId",
+                    name: { $first: "$deviceName" }
+                }
+            }
+        ]).toArray();
+
+        const formattedDevices = devices.map(device => ({
+            deviceId: device._id,
+            deviceName: device.name || "Bilinmeyen Cihaz"
+        }));
+
+        res.json(formattedDevices);
     } catch (err) {
         console.error("Cihaz listesi hatası:", err);
         res.status(500).json({ error: "Sunucu hatası" });
     }
 });
+
 
 // Sunucuyu Başlat
 server.listen(3000, () => {
