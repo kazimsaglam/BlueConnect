@@ -124,31 +124,37 @@ app.get('/api/historical-data', async (req, res) => {
 });
 
 
-// 4. Cihaz Listesi Endpoint'i (isimlerle döner)
+// 4. Cihaz Listesi Endpoint'i  (deviceId + deviceName döner)
 app.get('/api/device-list', async (req, res) => {
-    try {
-        const collection = db.collection('sensor_readings');
+  try {
+    const collection = db.collection('sensor_readings');
 
-        const devices = await collection.aggregate([
-            {
-                $group: {
-                    _id: "$deviceId",
-                    name: { $first: "$deviceName" }
-                }
-            }
-        ]).toArray();
+    const devices = await collection.aggregate([
+      { $sort: { timestamp: -1 } },
 
-        const formattedDevices = devices.map(device => ({
-            deviceId: device._id,
-            deviceName: device.name || "Bilinmeyen Cihaz"
-        }));
+      {
+        $group: {
+          _id: "$deviceId",
+          deviceName: { $first: "$deviceName" }
+        }
+      },
 
-        res.json(formattedDevices);
-    } catch (err) {
-        console.error("Cihaz listesi hatası:", err);
-        res.status(500).json({ error: "Sunucu hatası" });
-    }
+      {
+        $project: {
+          _id: 0,
+          deviceId: "$_id",
+          deviceName: { $ifNull: ["$deviceName", "Bilinmeyen Cihaz"] }
+        }
+      }
+    ]).toArray();
+
+    res.json(devices);
+  } catch (err) {
+    console.error("Cihaz listesi hatası:", err);
+    res.status(500).json({ error: "Sunucu hatası" });
+  }
 });
+
 
 
 // Sunucuyu Başlat
