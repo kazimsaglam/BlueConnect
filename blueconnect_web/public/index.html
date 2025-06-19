@@ -11,87 +11,14 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <style>
-        :root {
-            --bc-primary: #0d6efd;
-            --bc-text: #f1f1f1;
-            --bc-danger: #e74c3c;
-            --bc-info: #3498db;
-        }
-
-        body {
-            background: #1a1a1a;
-            color: var(--bc-text);
-        }
-
-        h1, h5 {
-            color: var(--bc-text);
-        }
-
-        .card {
-            border-radius: 14px;
-            background: linear-gradient(135deg,#2a2a2a,#343434);
-            box-shadow: 0 6px 12px rgba(0,0,0,.35);
-        }
-
-        .sensor-value {
-            font-size: 1.4rem;
-            font-weight: 700;
-        }
-
-        #chart-container {
-            height: 400px;
-        }
-
-        .device-card.alert {
-            background: rgba(231,76,60,.18);
-            border-left: 5px solid var(--bc-danger);
-            animation: blink 1s infinite alternate;
-        }
-
-        @keyframes blink {
-            from {
-                background: rgba(231,76,60,.18);
-            }
-
-            to {
-                background: rgba(231,76,60,.32);
-            }
-        }
-
-        table thead th {
-            color: var(--bc-primary);
-        }
-
-        table tbody tr:nth-child(even) {
-            background: rgba(255,255,255,.04);
-        }
-
-        .filter-sm .form-select, .filter-sm .form-control {
-            padding: .25rem .5rem;
-            font-size: .875rem;
-            height: calc(1.5em + .5rem + 2px);
-        }
-
-        .close-btn {
-            position: absolute;
-            top: 8px;
-            right: 10px;
-            color: #bbb;
-            font-size: 1.2rem;
-            cursor: pointer;
-        }
-
-            .close-btn:hover {
-                color: red;
-            }
-
-        .device-card .text-muted {
-            padding-right: 1.5rem; /* X butonuyla çakışmayı önler */
-        }
-
-        .device-card {
-            position: relative;
-        }
+        :root{ --bc-primary:#0d6efd; --bc-text:#f1f1f1; --bc-danger:#e74c3c; --bc-info:#3498db; }
+        body{background:#1a1a1a;color:var(--bc-text);} h1,h5{color:var(--bc-text);}
+        .card{border-radius:14px;background:linear-gradient(135deg,#2a2a2a,#343434);box-shadow:0 6px 12px rgba(0,0,0,.35);}
+        .sensor-value{font-size:1.4rem;font-weight:700;} #chart-container{height:400px;}
+        .device-card.alert{background:rgba(231,76,60,.18);border-left:5px solid var(--bc-danger);animation:blink 1s infinite alternate;}
+        @keyframes blink{from{background:rgba(231,76,60,.18);}  to{background:rgba(231,76,60,.32);} }
+        table thead th{color:var(--bc-primary);} table tbody tr:nth-child(even){background:rgba(255,255,255,.04);}
+        .filter-sm .form-select,.filter-sm .form-control{padding:.25rem .5rem;font-size:.875rem;height:calc(1.5em + .5rem + 2px);}
     </style>
 </head>
 <body class="container py-4">
@@ -111,7 +38,6 @@
         <div class="col-md-4">
             <div class="card p-3 h-100">
                 <h5 class="mb-3"><i class="fas fa-clock me-2"></i>Anlık Veriler</h5>
-                <button class="btn btn-outline-light btn-sm mb-3" onclick="resetHiddenCards()">Tüm Cihazları Göster</button>
                 <div id="realtime-data"></div>
             </div>
         </div>
@@ -150,132 +76,102 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 
     <script>
-        const localTime = ts => new Date(ts); 
+        /* ——— 3 saat geri çevir ——— */
+        const localTime = ts => new Date(new Date(ts).getTime() - 3*60*60*1000);
 
+        /* ——— Grafik ——— */
         const ctx = document.getElementById('sensor-chart').getContext('2d');
-        const gTemp = ctx.createLinearGradient(0, 0, 0, 400); gTemp.addColorStop(0, 'rgba(231,76,60,.45)'); gTemp.addColorStop(1, 'rgba(231,76,60,.05)');
-        const gHum = ctx.createLinearGradient(0, 0, 0, 400); gHum.addColorStop(0, 'rgba(52,152,219,.45)'); gHum.addColorStop(1, 'rgba(52,152,219,.05)');
+        const gTemp = ctx.createLinearGradient(0,0,0,400); gTemp.addColorStop(0,'rgba(231,76,60,.45)'); gTemp.addColorStop(1,'rgba(231,76,60,.05)');
+        const gHum  = ctx.createLinearGradient(0,0,0,400); gHum .addColorStop(0,'rgba(52,152,219,.45)'); gHum .addColorStop(1,'rgba(52,152,219,.05)');
 
-        const chart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                datasets: [
-                    { label: 'Sıcaklık (°C)', borderColor: '#e74c3c', backgroundColor: gTemp, borderWidth: 2, tension: .3, pointRadius: 0, fill: true, data: [] },
-                    { label: 'Nem (%)', borderColor: '#3498db', backgroundColor: gHum, borderWidth: 2, tension: .3, pointRadius: 0, fill: true, data: [] }
-                ]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                interaction: { intersect: false, mode: 'index' },
-                plugins: { legend: { labels: { color: '#f1f1f1', boxWidth: 12 } } },
-                scales: {
-                    x: {
-                        type: 'time', time: { unit: 'hour', tooltipFormat: 'HH:mm' },
-                        ticks: {
-                            color: '#c0c4d1', autoSkip: true, maxTicksLimit: 10,
-                            callback: v => localTime(v).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
-                        },
-                        grid: { color: 'rgba(255,255,255,.05)' }
-                    },
-                    y: { ticks: { color: '#c0c4d1' }, grid: { color: 'rgba(255,255,255,.05)' } }
+        const chart = new Chart(ctx,{
+            type:'line',
+            data:{datasets:[
+                {label:'Sıcaklık (°C)',borderColor:'#e74c3c',backgroundColor:gTemp,borderWidth:2,tension:.3,pointRadius:0,fill:true,data:[]},
+                {label:'Nem (%)',      borderColor:'#3498db',backgroundColor:gHum ,borderWidth:2,tension:.3,pointRadius:0,fill:true,data:[]}
+            ]},
+            options:{
+                responsive:true,maintainAspectRatio:false,
+                interaction:{intersect:false,mode:'index'},
+                plugins:{legend:{labels:{color:'#f1f1f1',boxWidth:12}}},
+                scales:{
+                    x:{type:'time',time:{unit:'hour',tooltipFormat:'HH:mm'},
+                        ticks:{color:'#c0c4d1',autoSkip:true,maxTicksLimit:10,
+                               callback:v=>localTime(v).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})},
+                        grid:{color:'rgba(255,255,255,.05)'}},
+                    y:{ticks:{color:'#c0c4d1'},grid:{color:'rgba(255,255,255,.05)'}}
                 }
             }
         });
 
-        const fetchData = async ep => { try { return await (await fetch(ep)).json(); } catch (e) { console.error(e); return []; } };
+        /* ——— Fetch ——— */
+        const fetchData = async ep => { try{ return await (await fetch(ep)).json(); }catch(e){ console.error(e); return []; } };
 
-        async function loadDeviceList() {
+        /* ——— Cihaz listesi ——— */
+        async function loadDeviceList(){
             const sel = document.getElementById('device-filter');
             sel.innerHTML = '<option value="">Tüm Cihazlar</option>';
-            for (const d of await fetchData('/api/device-list')) {
-                const id = typeof d === 'string' ? d : (d.deviceId || d.id);
-                const name = typeof d === 'string' ? d : (d.deviceName || d.name || id);
-                sel.insertAdjacentHTML('beforeend', `<option value="${id}">${name}</option>`);
+            for(const d of await fetchData('/api/device-list')){
+                const id   = typeof d==='string'?d:(d.deviceId||d.id);
+                const name = typeof d==='string'?d:(d.deviceName||d.name||id);
+                sel.insertAdjacentHTML('beforeend',`<option value="${id}">${name}</option>`);
             }
         }
 
-        async function updateAll() {
+        /* ——— Ana güncelleme ——— */
+        async function updateAll(){
             const id = document.getElementById('device-filter').value;
             const ds = document.getElementById('date-filter').value;
-            const start = new Date(new Date(ds).getTime() + 3 * 60 * 60 * 1000); 
-
-            const end = new Date(start);
-            end.setHours(23, 59, 59, 999);
+            const start = ds ? new Date(ds) : new Date();
+            const end   = new Date(start); end.setHours(23,59,59,999);
             const q = `?deviceId=${id}&startDate=${start.toISOString()}&endDate=${end.toISOString()}`;
 
-            const [latest, hist] = await Promise.all([fetchData('/api/latest-data'), fetchData('/api/historical-data' + q)]);
+            const [latest,hist] = await Promise.all([ fetchData('/api/latest-data'), fetchData('/api/historical-data'+q) ]);
 
-            // ⛔️ Gizlenmiş cihazlar
-            const hiddenDevices = JSON.parse(localStorage.getItem('hiddenDevices') || '[]');
+            /* — Anlık kartlar — */
+            document.getElementById('realtime-data').innerHTML = Object.entries(latest||{})
+              .map(([k,d])=>`
+                <div class="device-card mb-3 p-3 rounded ${d.temperature>30?'alert':''}">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <h6 class="mb-0">${d.deviceName||k}</h6>
+                        <small class="text-muted">${localTime(d.timestamp).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</small>
+                    </div>
+                    <div class="sensor-value text-danger">${d.temperature}°C</div>
+                    <div class="sensor-value text-info">${d.humidity}%</div>
+                </div>`).join('');
 
-            // Anlık kartlar
-            document.getElementById('realtime-data').innerHTML = Object.entries(latest || {})
-                .filter(([k, _]) => !hiddenDevices.includes(k))
-                .map(([k, d]) => `
-                        <div class="device-card mb-3 p-3 rounded ${d.temperature > 30 ? 'alert' : ''}" id="card-${k}">
-                            <span class="close-btn" onclick="hideCard('${k}')">&times;</span>
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <h6 class="mb-0">${d.deviceName || k}</h6>
-                                <small class="text-muted">${localTime(d.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</small>
-                            </div>
-                            <div class="sensor-value text-danger">${d.temperature}°C</div>
-                            <div class="sensor-value text-info">${d.humidity}%</div>
-                        </div>`).join('');
-
-            // Grafik
-            const asc = [...(hist || [])].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-            const filtered = asc.filter(d => !hiddenDevices.includes(d.deviceId)); // tek yerde filtrele
-
-            // Grafik
-            chart.data.datasets[0].data = filtered.map(d => ({ x: localTime(d.timestamp), y: d.temperature }));
-            chart.data.datasets[1].data = filtered.map(d => ({ x: localTime(d.timestamp), y: d.humidity }));
+            /* — Grafik — */
+            const asc = [...(hist||[])].sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+            chart.data.datasets[0].data = asc.map(d=>({x:localTime(d.timestamp),y:d.temperature}));
+            chart.data.datasets[1].data = asc.map(d=>({x:localTime(d.timestamp),y:d.humidity}));
             chart.update();
 
-            // Tablo
-            document.querySelector('#history-table tbody').innerHTML = filtered
-                .slice().reverse() // ters sıraya çevir
-                .map(d => `<tr>
-          <td>${d.deviceName || d.deviceId}</td>
-          <td>${d.temperature}</td>
-          <td>${d.humidity}</td>
-          <td>${localTime(d.timestamp).toLocaleString('tr-TR', {
-                    year: '2-digit', month: '2-digit', day: '2-digit',
-                    hour: '2-digit', minute: '2-digit', second: '2-digit'
-                })}</td>
-      </tr>`).join('');
-
+            /* — Tablo — */
+            document.querySelector('#history-table tbody').innerHTML = asc.reverse()
+              .map(d=>`<tr>
+                    <td>${d.deviceName||d.deviceId}</td>
+                    <td>${d.temperature}</td>
+                    <td>${d.humidity}</td>
+                    <td>${localTime(d.timestamp).toLocaleString('tr-TR',{year:'2-digit',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'})}</td>
+                </tr>`).join('');
         }
 
-        function exportTableToCSV(fname = 'veriler.csv') {
+        /* ——— CSV ——— */
+        function exportTableToCSV(fname='veriler.csv'){
             const rows = [...document.querySelectorAll('#history-table tr')];
-            const csv = rows.map(r => [...r.children].map(c => `"${c.textContent.trim()}"`).join(',')).join('\n');
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: fname });
+            const csv  = rows.map(r=>[...r.children].map(c=>`"${c.textContent.trim()}"`).join(',')).join('\n');
+            const blob = new Blob([csv],{type:'text/csv'});
+            const a    = Object.assign(document.createElement('a'),{href:URL.createObjectURL(blob),download:fname});
             document.body.append(a); a.click(); a.remove();
         }
 
-        const socket = io(); socket.on('new-data', updateAll);
+        /* ——— Soket ——— */
+        const socket = io(); socket.on('new-data',updateAll);
 
-        // 🧠 Gizleme yönetimi
-        function hideCard(deviceId) {
-            const card = document.getElementById(`card-${deviceId}`);
-            if (card) card.style.display = 'none';
-
-            const hidden = JSON.parse(localStorage.getItem('hiddenDevices') || '[]');
-            if (!hidden.includes(deviceId)) {
-                hidden.push(deviceId);
-                localStorage.setItem('hiddenDevices', JSON.stringify(hidden));
-            }
-        }
-
-        function resetHiddenCards() {
-            localStorage.removeItem('hiddenDevices');
-            updateAll();
-        }
-
+        /* ——— Başlat ——— */
         loadDeviceList();
         updateAll();
-        setInterval(updateAll, 5000);
+        setInterval(updateAll,5000);
     </script>
 </body>
 </html>
