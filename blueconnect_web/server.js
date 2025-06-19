@@ -22,7 +22,7 @@ let db;
 async function connectDB() {
     try {
         await client.connect();
-        db = client.db();
+        db = client.db("test");
         console.log("✅ MongoDB'ye bağlandı!");
     } catch (err) {
         console.error("❌ MongoDB bağlantı hatası:", err);
@@ -126,33 +126,33 @@ app.get('/api/historical-data', async (req, res) => {
 
 // 4. Cihaz Listesi Endpoint'i  (deviceId + deviceName döner)
 app.get('/api/device-list', async (req, res) => {
-  try {
-    const collection = db.collection('sensor_readings');
+    try {
+        const collection = db.collection('sensor_readings');
 
-    const devices = await collection.aggregate([
-      { $sort: { timestamp: -1 } },
+        const devices = await collection.aggregate([
+            { $sort: { timestamp: -1 } },
 
-      {
-        $group: {
-          _id: "$deviceId",
-          deviceName: { $first: "$deviceName" }
-        }
-      },
+            {
+                $group: {
+                    _id: "$deviceId",
+                    deviceName: { $first: "$deviceName" }
+                }
+            },
 
-      {
-        $project: {
-          _id: 0,
-          deviceId: "$_id",
-          deviceName: { $ifNull: ["$deviceName", "Bilinmeyen Cihaz"] }
-        }
-      }
-    ]).toArray();
+            {
+                $project: {
+                    _id: 0,
+                    deviceId: "$_id",
+                    deviceName: { $ifNull: ["$deviceName", "Bilinmeyen Cihaz"] }
+                }
+            }
+        ]).toArray();
 
-    res.json(devices);
-  } catch (err) {
-    console.error("Cihaz listesi hatası:", err);
-    res.status(500).json({ error: "Sunucu hatası" });
-  }
+        res.json(devices);
+    } catch (err) {
+        console.error("Cihaz listesi hatası:", err);
+        res.status(500).json({ error: "Sunucu hatası" });
+    }
 });
 
 
