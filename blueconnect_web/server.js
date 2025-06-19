@@ -37,7 +37,7 @@ io.on('connection', (socket) => {
         try {
             const { deviceId, deviceName, temperature, humidity, timestamp } = data;
             const collection = db.collection('sensor_readings');
-
+            
             await collection.insertOne({
                 deviceId,
                 deviceName: deviceName || "Bilinmeyen Cihaz",
@@ -68,14 +68,15 @@ app.get("/", (req, res) => {
 app.post('/api/sensor-data', async (req, res) => {
     try {
         const { deviceId, deviceName, temperature, humidity, timestamp } = req.body;
-
+        const ts = timestamp ? new Date(timestamp) : new Date();
+        
         const collection = db.collection('sensor_readings');
         await collection.insertOne({
             deviceId,
             deviceName: deviceName || "Bilinmeyen Cihaz",
             temperature: parseFloat(temperature),
             humidity: parseFloat(humidity),
-            timestamp: new Date(timestamp)
+            timestamp: ts
         });
 
         console.log(`[✓] Veri kaydedildi: ${deviceId}`);
@@ -86,7 +87,7 @@ app.post('/api/sensor-data', async (req, res) => {
             deviceName,
             temperature,
             humidity,
-            timestamp
+            timestamp: ts 
         });
 
         res.sendStatus(200);
