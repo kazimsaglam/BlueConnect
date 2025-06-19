@@ -5,8 +5,6 @@ const { MongoClient } = require('mongodb');
 const http = require('http');
 const { Server } = require('socket.io');
 const router = express.Router();
-const SensorData = require('mongodb');
-// Express ve Socket.io Sunucu Kurulumu
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
@@ -76,15 +74,16 @@ app.post('/api/sensor-data', async (req, res) => {
     }
 });
 
-router.delete("/reset-data", async (req, res) => {
+app.delete("/reset-data", async (req, res) => {
     try {
-        await SensorData.deleteMany({});
+        await db.collection("sensor_readings").deleteMany({});
         res.sendStatus(200);
     } catch (err) {
         console.error("Veriler silinirken hata:", err);
         res.sendStatus(500);
     }
 });
+
 
 module.exports = router;
 
@@ -184,9 +183,6 @@ app.post('/api/unhide-device', async (req, res) => {
         res.status(500).json({ error: "Sunucu hatası" });
     }
 });
-
-const resetRoute = require("./routes/resetData");
-app.use("/", resetRoute);
 
 
 // Sunucuyu Başlat
