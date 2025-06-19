@@ -41,7 +41,6 @@
             from {
                 background-color: #ffe6e6;
             }
-
             to {
                 background-color: #ffb3b3;
             }
@@ -104,14 +103,17 @@
         const ctx = document.getElementById('sensor-chart').getContext('2d');
         const chart = new Chart(ctx, {
             type: 'line',
-            data: { ... },
+            data: {
+                datasets: [
+                    { label: 'Sıcaklık', borderColor: '#e74c3c', data: [] },
+                    { label: 'Nem', borderColor: '#3498db', data: [] }
+                ]
+            },
             options: {
                 responsive: true,
                 maintainAspectRatio: false
             }
         });
-        }
-
 
         async function fetchData(endpoint = '/api/latest-data') {
             try {
@@ -155,15 +157,15 @@
                 Object.entries(latestData).map(([id, d]) => {
                     const isHot = d.temperature > 30;
                     return `
-                                    <div class="device-card mb-3 p-3 rounded ${isHot ? 'alert' : 'bg-light'}">
-                                        <div class="d-flex justify-content-between">
-                                            <h6>${d.deviceName || id}</h6>
-                                            <small>${new Date(d.timestamp).toLocaleTimeString()}</small>
-                                        </div>
-                                        <div class="sensor-value text-danger">${d.temperature}°C</div>
-                                        <div class="sensor-value text-primary">${d.humidity}%</div>
-                                    </div>
-                                `;
+                        <div class="device-card mb-3 p-3 rounded ${isHot ? 'alert' : 'bg-light'}">
+                            <div class="d-flex justify-content-between">
+                                <h6>${d.deviceName || id}</h6>
+                                <small>${new Date(d.timestamp).toLocaleTimeString()}</small>
+                            </div>
+                            <div class="sensor-value text-danger">${d.temperature}°C</div>
+                            <div class="sensor-value text-primary">${d.humidity}%</div>
+                        </div>
+                    `;
                 }).join('');
 
             chart.data.datasets[0].data = historicalData.map(d => ({ x: d.timestamp, y: d.temperature }));
@@ -172,13 +174,13 @@
 
             document.querySelector('#history-table tbody').innerHTML =
                 historicalData.map(d => `
-                                <tr>
-                                    <td>${d.deviceId}</td>
-                                    <td>${d.temperature}</td>
-                                    <td>${d.humidity}</td>
-                                    <td>${new Date(d.timestamp).toLocaleString()}</td>
-                                </tr>
-                            `).join('');
+                    <tr>
+                        <td>${d.deviceId}</td>
+                        <td>${d.temperature}</td>
+                        <td>${d.humidity}</td>
+                        <td>${new Date(d.timestamp).toLocaleString()}</td>
+                    </tr>
+                `).join('');
         }
 
         function exportTableToCSV(filename = 'veriler.csv') {
