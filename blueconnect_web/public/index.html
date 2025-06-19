@@ -178,15 +178,18 @@
                 }).join('');
 
             /* ---- 2) Grafik ---- */
-            chart.data.datasets[0].data = historicalData.map(d => {
+            const chartData = [...historicalData].reverse();   // ⇢ eski → yeni
+
+            chart.data.datasets[0].data = chartData.map(d => {
                 const t = new Date(d.timestamp);
-                t.setHours(t.getHours() - 3);                 // ⇠ 3 saat geri
+                t.setHours(t.getHours() - 3);
                 return {
                     x: t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
                     y: d.temperature
                 };
             });
-            chart.data.datasets[1].data = historicalData.map(d => {
+
+            chart.data.datasets[1].data = chartData.map(d => {
                 const t = new Date(d.timestamp);
                 t.setHours(t.getHours() - 3);
                 return {
@@ -194,6 +197,7 @@
                     y: d.humidity
                 };
             });
+
             chart.update();
 
             /* ---- 3) Tablo ---- */
