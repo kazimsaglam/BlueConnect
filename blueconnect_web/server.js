@@ -14,9 +14,11 @@ app.use(cors());
 app.use(express.json());
 
 // MongoDB Bağlantı Ayarları
-const uri = "mongodb+srv://blueadmin:blue123@blueconnect.v5osp0i.mongodb.net/?retryWrites=true&w=majority&appName=BlueConnect";
+const uri = "mongodb+srv://blueadmin:blue123@blueconnect.v5osp0i.mongodb.net/?retryWrites=true&w=majority";
 const client = new MongoClient(uri);
 let db;
+
+
 
 // MongoDB'ye Bağlan
 async function connectDB() {
