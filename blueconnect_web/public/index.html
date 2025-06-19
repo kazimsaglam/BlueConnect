@@ -219,10 +219,8 @@
                     </div>`).join('');
 
             const asc = [...(hist || [])].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-            const filtered = asc.filter(d => !hiddenDevices.includes(d.deviceId));
-
-            chart.data.datasets[0].data = filtered.map(d => ({ x: localTime(d.timestamp), y: d.temperature }));
-            chart.data.datasets[1].data = filtered.map(d => ({ x: localTime(d.timestamp), y: d.humidity }));
+            chart.data.datasets[0].data = asc.map(d => ({ x: localTime(d.timestamp), y: d.temperature }));
+            chart.data.datasets[1].data = asc.map(d => ({ x: localTime(d.timestamp), y: d.humidity }));
             chart.update();
 
             document.querySelector('#history-table tbody').innerHTML = filtered
