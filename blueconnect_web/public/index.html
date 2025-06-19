@@ -160,7 +160,9 @@
             const latestData = await fetchData('/api/latest-data');
             const historicalData = await fetchData('/api/historical-data' + query);
 
-            /* ---- 1) Anlık kartlar ---- */
+            historicalData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            /* --- 1) Anlık kartlar --- */
             document.getElementById('realtime-data').innerHTML =
                 Object.entries(latestData).map(([id, d]) => {
                     const isHot = d.temperature > 30;
@@ -176,20 +178,30 @@
                 }).join('');
 
             /* ---- 2) Grafik ---- */
-            chart.data.datasets[0].data = historicalData.map(d => ({
-                x: new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-                y: d.temperature
-            }));
-            chart.data.datasets[1].data = historicalData.map(d => ({
-                x: new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-                y: d.humidity
-            }));
+            chart.data.datasets[0].data = historicalData.map(d => {
+                const t = new Date(d.timestamp);
+                t.setHours(t.getHours() - 3);                 // ⇠ 3 saat geri
+                return {
+                    x: t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                    y: d.temperature
+                };
+            });
+            chart.data.datasets[1].data = historicalData.map(d => {
+                const t = new Date(d.timestamp);
+                t.setHours(t.getHours() - 3);
+                return {
+                    x: t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                    y: d.humidity
+                };
+            });
             chart.update();
 
             /* ---- 3) Tablo ---- */
             document.querySelector('#history-table tbody').innerHTML =
                 historicalData.map(d => {
-                    const local = new Date(d.timestamp).toLocaleString([], {
+                    const t = new Date(d.timestamp);
+                    t.setHours(t.getHours() - 3);
+                    const local = t.toLocaleString([], {
                         year: 'numeric', month: '2-digit', day: '2-digit',
                         hour: '2-digit', minute: '2-digit', second: '2-digit'
                     });
