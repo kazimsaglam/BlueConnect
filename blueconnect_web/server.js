@@ -4,7 +4,8 @@ const cors = require('cors');
 const { MongoClient } = require('mongodb');
 const http = require('http');
 const { Server } = require('socket.io');
-const router = express.Router();
+
+// Express ve Socket.io Sunucu Kurulumu
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
@@ -32,29 +33,7 @@ connectDB();
 // WebSocket Bağlantısı
 io.on('connection', (socket) => {
     console.log('🔌 WebSocket bağlantısı kuruldu');
-
-    socket.on('new-data', async (data) => {
-        try {
-            const { deviceId, deviceName, temperature, humidity, timestamp } = data;
-            const collection = db.collection('sensor_readings');
-            
-            await collection.insertOne({
-                deviceId,
-                deviceName: deviceName || "Bilinmeyen Cihaz",
-                temperature: parseFloat(temperature),
-                humidity: parseFloat(humidity),
-                timestamp: new Date(timestamp)
-            });
-
-            console.log(`[✓] Socket ile gelen veri kaydedildi: ${deviceId}`);
-
-            io.emit('new-data', data); // geri yay
-        } catch (err) {
-            console.error("Socket veri kaydetme hatası:", err);
-        }
-    });
 });
-
 
 // Static Dosyalar
 app.use(express.static(path.join(__dirname, 'public')));
@@ -68,15 +47,14 @@ app.get("/", (req, res) => {
 app.post('/api/sensor-data', async (req, res) => {
     try {
         const { deviceId, deviceName, temperature, humidity, timestamp } = req.body;
-        const ts = timestamp ? new Date(timestamp) : new Date();
-        
+
         const collection = db.collection('sensor_readings');
         await collection.insertOne({
             deviceId,
             deviceName: deviceName || "Bilinmeyen Cihaz",
             temperature: parseFloat(temperature),
             humidity: parseFloat(humidity),
-            timestamp: ts
+            timestamp: new Date(timestamp)
         });
 
         console.log(`[✓] Veri kaydedildi: ${deviceId}`);
@@ -87,7 +65,7 @@ app.post('/api/sensor-data', async (req, res) => {
             deviceName,
             temperature,
             humidity,
-            timestamp: ts 
+            timestamp
         });
 
         res.sendStatus(200);
@@ -97,19 +75,7 @@ app.post('/api/sensor-data', async (req, res) => {
     }
 });
 
-app.delete("/reset-data", async (req, res) => {
-    try {
-        await db.collection("sensor_readings").deleteMany({});
-        res.sendStatus(200);
-    } catch (err) {
-        console.error("Veriler silinirken hata:", err);
-        res.sendStatus(500);
-    }
-});
-
-
-module.exports = router;
-
+// 2. Son Verileri Göster
 // 2. Son Verileri Göster
 app.get('/api/latest-data', async (req, res) => {
     try {
@@ -131,6 +97,7 @@ app.get('/api/latest-data', async (req, res) => {
         res.status(500).json({ error: "Sunucu hatası" });
     }
 });
+
 
 // 3. Tarihsel Veri Endpoint'i
 app.get('/api/historical-data', async (req, res) => {
@@ -156,70 +123,15 @@ app.get('/api/historical-data', async (req, res) => {
 
 // 4. Cihaz Listesi Endpoint'i
 app.get('/api/device-list', async (req, res) => {
-      try {
-    const collection = db.collection('sensor_readings');
-    const devices = await collection.aggregate([
-      { $sort: { timestamp: -1 } },          
-      { $group: {                          
-          _id: "$deviceId",
-          deviceName: { $first: "$deviceName" }
-      }},
-      { $project: {                      
-          _id: 0,
-          deviceId: "$_id",
-          deviceName: { $ifNull: ["$deviceName", "$_id"] }
-      }},
-      { $sort: { deviceName: 1 } }           
-    ]).toArray();
-
-    res.json(devices);
-  } catch (err) {
-    console.error("Cihaz listesi hatası:", err);
-    res.status(500).json({ error: "Sunucu hatası" });
-  }
-});
-
-// === EKLENENLER: Cihaz Gizleme Sistemi ===
-
-// 5. Gizli Cihazları Getir
-app.get('/api/hidden-devices', async (req, res) => {
     try {
-        const hidden = await db.collection('hidden_devices').find().toArray();
-        res.json(hidden.map(h => h.deviceId));
+        const devices = await db.collection('sensor_readings').distinct('deviceId');
+        const validDevices = devices.filter(id => id && id.trim() !== "");
+        res.json(validDevices);
     } catch (err) {
-        console.error("Gizli cihaz çekme hatası:", err);
+        console.error("Cihaz listesi hatası:", err);
         res.status(500).json({ error: "Sunucu hatası" });
     }
 });
-
-// 6. Cihazı Gizle
-app.post('/api/hide-device', async (req, res) => {
-    try {
-        const { deviceId } = req.body;
-        await db.collection('hidden_devices').updateOne(
-            { deviceId },
-            { $set: { deviceId } },
-            { upsert: true }
-        );
-        res.sendStatus(200);
-    } catch (err) {
-        console.error("Cihaz gizleme hatası:", err);
-        res.status(500).json({ error: "Sunucu hatası" });
-    }
-});
-
-// 7. Gizli Cihazı Geri Getir
-app.post('/api/unhide-device', async (req, res) => {
-    try {
-        const { deviceId } = req.body;
-        await db.collection('hidden_devices').deleteOne({ deviceId });
-        res.sendStatus(200);
-    } catch (err) {
-        console.error("Cihaz geri getirme hatası:", err);
-        res.status(500).json({ error: "Sunucu hatası" });
-    }
-});
-
 
 // Sunucuyu Başlat
 server.listen(3000, () => {
