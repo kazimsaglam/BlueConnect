@@ -129,6 +129,10 @@
             <div class="card p-3">
                 <div class="d-flex justify-content-between align-items-center mb-3 flex-column flex-sm-row gap-2">
                     <h5 class="mb-0"><i class="fas fa-table me-2"></i>Veri Geçmişi</h5>
+                    <button id="resetDataBtn" class="btn btn-danger ms-3">
+                        <i class="fas fa-trash-alt"></i> Verileri Sıfırla
+                    </button>
+
                     <button class="btn btn-success d-inline-flex align-items-center gap-2" onclick="exportTableToCSV()">
                         <i class="fas fa-file-csv"></i><span>CSV İndir</span>
                     </button>
@@ -148,6 +152,24 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+
+    <script>
+        document.getElementById("resetDataBtn").addEventListener("click", () => {
+            if (confirm("Tüm veri geçmişini silmek istediğinize emin misiniz?")) {
+                fetch("/reset-data", { method: "DELETE" })
+                    .then((res) => {
+                        if (res.ok) {
+                            alert("Veri geçmişi başarıyla silindi.");
+                            location.reload();
+                        } else {
+                            alert("Veriler silinemedi.");
+                        }
+                    })
+                    .catch(() => alert("Sunucuya ulaşılamadı."));
+            }
+        });
+    </script>
+
 
     <script>
         const localTime = ts => new Date(new Date(ts).getTime() - 3 * 60 * 60 * 1000);
@@ -210,15 +232,15 @@
             document.getElementById('realtime-data').innerHTML = Object.entries(latest || {})
                 .filter(([k, _]) => !hiddenDevices.includes(k))
                 .map(([k, d]) => `
-                    <div class="device-card mb-3 p-3 rounded ${d.temperature > 30 ? 'alert' : ''}" id="card-${k}">
-                        <span class="close-btn" onclick="hideCard('${k}')">&times;</span>
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <h6 class="mb-0">${d.deviceName || k}</h6>
-                            <small class="text-muted">${localTime(d.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</small>
-                        </div>
-                        <div class="sensor-value text-danger">${d.temperature}°C</div>
-                        <div class="sensor-value text-info">${d.humidity}%</div>
-                    </div>`).join('');
+                        <div class="device-card mb-3 p-3 rounded ${d.temperature > 30 ? 'alert' : ''}" id="card-${k}">
+                            <span class="close-btn" onclick="hideCard('${k}')">&times;</span>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <h6 class="mb-0">${d.deviceName || k}</h6>
+                                <small class="text-muted">${localTime(d.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</small>
+                            </div>
+                            <div class="sensor-value text-danger">${d.temperature}°C</div>
+                            <div class="sensor-value text-info">${d.humidity}%</div>
+                        </div>`).join('');
 
             // Grafik
             const asc = [...(hist || [])].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
@@ -233,14 +255,14 @@
             document.querySelector('#history-table tbody').innerHTML = filtered
                 .slice().reverse() // ters sıraya çevir
                 .map(d => `<tr>
-      <td>${d.deviceName || d.deviceId}</td>
-      <td>${d.temperature}</td>
-      <td>${d.humidity}</td>
-      <td>${localTime(d.timestamp).toLocaleString('tr-TR', {
+          <td>${d.deviceName || d.deviceId}</td>
+          <td>${d.temperature}</td>
+          <td>${d.humidity}</td>
+          <td>${localTime(d.timestamp).toLocaleString('tr-TR', {
                     year: '2-digit', month: '2-digit', day: '2-digit',
                     hour: '2-digit', minute: '2-digit', second: '2-digit'
                 })}</td>
-  </tr>`).join('');
+      </tr>`).join('');
 
         }
 
