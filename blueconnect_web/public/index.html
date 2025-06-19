@@ -227,8 +227,7 @@
 
             document.querySelector('#history-table tbody').innerHTML = filtered
                 .slice().reverse()
-                .map(d => `
-                <tr>
+                .map(d => `<tr>
                     <td>${d.deviceName || d.deviceId}</td>
                     <td>${d.temperature}</td>
                     <td>${d.humidity}</td>
