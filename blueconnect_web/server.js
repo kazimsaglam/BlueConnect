@@ -133,14 +133,29 @@ app.get('/api/historical-data', async (req, res) => {
 
 // 4. Cihaz Listesi Endpoint'i
 app.get('/api/device-list', async (req, res) => {
-    try {
-        const devices = await db.collection('sensor_readings').distinct('deviceId');
-        const validDevices = devices.filter(id => id && id.trim() !== "");
-        res.json(validDevices);
-    } catch (err) {
-        console.error("Cihaz listesi hatası:", err);
-        res.status(500).json({ error: "Sunucu hatası" });
-    }
+  try {
+    const collection = db.collection('sensor_readings');
+
+    // En yeni kaydı baz alarak deviceName’i yakala
+    const devices = await collection.aggregate([
+      { $sort: { timestamp: -1 } },          
+      { $group: {                          
+          _id: "$deviceId",
+          deviceName: { $first: "$deviceName" }
+      }},
+      { $project: {                      
+          _id: 0,
+          deviceId: "$_id",
+          deviceName: { $ifNull: ["$deviceName", "$_id"] }
+      }},
+      { $sort: { deviceName: 1 } }           
+    ]).toArray();
+
+    res.json(devices);
+  } catch (err) {
+    console.error("Cihaz listesi hatası:", err);
+    res.status(500).json({ error: "Sunucu hatası" });
+  }
 });
 
 // === EKLENENLER: Cihaz Gizleme Sistemi ===
