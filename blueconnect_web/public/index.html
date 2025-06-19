@@ -176,13 +176,19 @@
 
             document.querySelector('#history-table tbody').innerHTML =
                 historicalData.map(d => `
-                        <tr>
-                            <td>${d.deviceId}</td>
-                            <td>${d.temperature}</td>
-                            <td>${d.humidity}</td>
-                           <td>${new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                        </tr>
-                    `).join('');
+        <tr>
+            <td>${d.deviceId}</td>
+            <td>${d.temperature}</td>
+            <td>${d.humidity}</td>
+            <td>${(() => {
+                        const date = new Date(d.timestamp);
+                        date.setHours(date.getHours() - 3);
+                        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    })()
+                    }</td>
+        </tr>
+    `).join('');
+
         }
 
         function exportTableToCSV(filename = 'veriler.csv') {
