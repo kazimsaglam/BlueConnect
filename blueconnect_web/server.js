@@ -19,7 +19,6 @@ const client = new MongoClient(uri);
 let db;
 
 
-
 // MongoDB'ye Bağlan
 async function connectDB() {
     try {
@@ -78,7 +77,6 @@ app.post('/api/sensor-data', async (req, res) => {
 });
 
 // 2. Son Verileri Göster
-// 2. Son Verileri Göster
 app.get('/api/latest-data', async (req, res) => {
     try {
         const collection = db.collection('sensor_readings');
@@ -126,38 +124,31 @@ app.get('/api/historical-data', async (req, res) => {
 });
 
 
-// 4. Cihaz Listesi Endpoint'i  (deviceId + deviceName döner)
+// 4. Cihaz Listesi Endpoint'i  (eviceName döner)
 app.get('/api/device-list', async (req, res) => {
-    try {
-        const collection = db.collection('sensor_readings');
+  try {
+    const collection = db.collection('sensor_readings')
 
-        const devices = await collection.aggregate([
-            { $sort: { timestamp: -1 } },
+    const devices = await collection.aggregate([
+      { $sort: { timestamp: -1 } },          
+      { $group: {                          
+          _id: "$deviceId",
+          deviceName: { $first: "$deviceName" }
+      }},
+      { $project: {                      
+          _id: 0,
+          deviceId: "$_id",
+          deviceName: { $ifNull: ["$deviceName", "$_id"] }
+      }},
+      { $sort: { deviceName: 1 } }           
+    ]).toArray();
 
-            {
-                $group: {
-                    _id: "$deviceId",
-                    deviceName: { $first: "$deviceName" }
-                }
-            },
-
-            {
-                $project: {
-                    _id: 0,
-                    deviceId: "$_id",
-                    deviceName: { $ifNull: ["$deviceName", "Bilinmeyen Cihaz"] }
-                }
-            }
-        ]).toArray();
-
-        res.json(devices);
-    } catch (err) {
-        console.error("Cihaz listesi hatası:", err);
-        res.status(500).json({ error: "Sunucu hatası" });
-    }
+    res.json(devices);
+  } catch (err) {
+    console.error("Cihaz listesi hatası:", err);
+    res.status(500).json({ error: "Sunucu hatası" });
+  }
 });
-
-
 
 // Sunucuyu Başlat
 server.listen(3000, () => {
