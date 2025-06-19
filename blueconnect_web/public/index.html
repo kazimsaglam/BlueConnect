@@ -160,40 +160,47 @@
             const latestData = await fetchData('/api/latest-data');
             const historicalData = await fetchData('/api/historical-data' + query);
 
+            /* ---- 1) Anlık kartlar ---- */
             document.getElementById('realtime-data').innerHTML =
                 Object.entries(latestData).map(([id, d]) => {
                     const isHot = d.temperature > 30;
                     return `
-                            <div class="device-card mb-3 p-3 rounded ${isHot ? 'alert' : 'bg-light'}">
-                                <div class="d-flex justify-content-between">
-                                    <h6>${d.deviceName || id}</h6>
-                                    <small>${new Date(d.timestamp).toLocaleTimeString()}</small>
-                                </div>
-                                <div class="sensor-value text-danger">${d.temperature}°C</div>
-                                <div class="sensor-value text-primary">${d.humidity}%</div>
-                            </div>
-                        `;
+        <div class="device-card mb-3 p-3 rounded ${isHot ? 'alert' : 'bg-light'}">
+          <div class="d-flex justify-content-between">
+            <h6>${d.deviceName || id}</h6>
+            <small>${new Date(d.timestamp).toLocaleTimeString()}</small>
+          </div>
+          <div class="sensor-value text-danger">${d.temperature}°C</div>
+          <div class="sensor-value text-primary">${d.humidity}%</div>
+        </div>`;
                 }).join('');
 
-            chart.data.datasets[0].data = historicalData.map(d => ({ x: d.timestamp, y: d.temperature }));
-            chart.data.datasets[1].data = historicalData.map(d => ({ x: d.timestamp, y: d.humidity }));
+            /* ---- 2) Grafik ---- */
+            chart.data.datasets[0].data = historicalData.map(d => ({
+                x: new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                y: d.temperature
+            }));
+            chart.data.datasets[1].data = historicalData.map(d => ({
+                x: new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                y: d.humidity
+            }));
             chart.update();
 
+            /* ---- 3) Tablo ---- */
             document.querySelector('#history-table tbody').innerHTML =
-                historicalData.map(d => `
+                historicalData.map(d => {
+                    const local = new Date(d.timestamp).toLocaleString([], {
+                        year: 'numeric', month: '2-digit', day: '2-digit',
+                        hour: '2-digit', minute: '2-digit', second: '2-digit'
+                    });
+                    return `
         <tr>
-            <td>${d.deviceId}</td>
-            <td>${d.temperature}</td>
-            <td>${d.humidity}</td>
-            <td>${(() => {
-                        const date = new Date(d.timestamp);
-                        date.setHours(date.getHours() - 3);
-                        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    })()
-                    }</td>
-        </tr>
-    `).join('');
-
+          <td>${d.deviceName || d.deviceId}</td>
+          <td>${d.temperature}</td>
+          <td>${d.humidity}</td>
+          <td>${local}</td>
+        </tr>`;
+                }).join('');
         }
 
         function exportTableToCSV(filename = 'veriler.csv') {
@@ -220,11 +227,11 @@
 
         // ---------------- Tarih filtresini bugüne ayarla ----------------
         document.addEventListener('DOMContentLoaded', () => {
-            const now = new Date();                    
+            const now = new Date();
             const yyyy = now.getFullYear();
-            const mm = String(now.getMonth() + 1).padStart(2, '0'); 
-            const dd = String(now.getDate()).padStart(2, '0');  
-            const today = `${yyyy}-${mm}-${dd}`;     
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const dd = String(now.getDate()).padStart(2, '0');
+            const today = `${yyyy}-${mm}-${dd}`;
 
             document.getElementById('date-filter').value = today;
         });
