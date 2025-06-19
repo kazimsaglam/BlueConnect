@@ -222,23 +222,25 @@
 
             // Grafik
             const asc = [...(hist || [])].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-            const filtered = asc.filter(d => !hiddenDevices.includes(d.deviceId));
+            const filtered = asc.filter(d => !hiddenDevices.includes(d.deviceId)); // tek yerde filtrele
 
+            // Grafik
             chart.data.datasets[0].data = filtered.map(d => ({ x: localTime(d.timestamp), y: d.temperature }));
             chart.data.datasets[1].data = filtered.map(d => ({ x: localTime(d.timestamp), y: d.humidity }));
-
             chart.update();
 
             // Tablo
-            document.querySelector('#history-table tbody').innerHTML = asc
-                .filter(d => !hiddenDevices.includes(d.deviceId)) // 🔒 tabloyu da filtrele
-                .reverse()
+            document.querySelector('#history-table tbody').innerHTML = filtered
+                .slice().reverse() // ters sıraya çevir
                 .map(d => `<tr>
-        <td>${d.deviceName || d.deviceId}</td>
-        <td>${d.temperature}</td>
-        <td>${d.humidity}</td>
-        <td>${localTime(d.timestamp).toLocaleString('tr-TR', { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</td>
-    </tr>`).join('');
+      <td>${d.deviceName || d.deviceId}</td>
+      <td>${d.temperature}</td>
+      <td>${d.humidity}</td>
+      <td>${localTime(d.timestamp).toLocaleString('tr-TR', {
+                    year: '2-digit', month: '2-digit', day: '2-digit',
+                    hour: '2-digit', minute: '2-digit', second: '2-digit'
+                })}</td>
+  </tr>`).join('');
 
         }
 
