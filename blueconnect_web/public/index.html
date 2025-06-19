@@ -178,7 +178,7 @@
                         <td>${d.deviceId}</td>
                         <td>${d.temperature}</td>
                         <td>${d.humidity}</td>
-                        <td>${new Date(d.timestamp).toLocaleString()}</td>
+                       <td>${new Date(d.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
                     </tr>
                 `).join('');
         }
