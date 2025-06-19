@@ -81,9 +81,9 @@
             cursor: pointer;
         }
 
-            .close-btn:hover {
-                color: red;
-            }
+        .close-btn:hover {
+            color: red;
+        }
 
         .device-card .text-muted {
             padding-right: 1.5rem;
@@ -150,7 +150,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 
     <script>
-        const localTime = ts => new Date(new Date(ts).getTime() - 3 * 60 * 60 * 1000);
+        // Saat farkı sorun çıkartıyorsa buraya tekrar -3 saat ekleyebilirsin
+        const localTime = ts => new Date(ts);
 
         const ctx = document.getElementById('sensor-chart').getContext('2d');
         const gTemp = ctx.createLinearGradient(0, 0, 0, 400); gTemp.addColorStop(0, 'rgba(231,76,60,.45)'); gTemp.addColorStop(1, 'rgba(231,76,60,.05)');
@@ -227,8 +228,7 @@
 
             document.querySelector('#history-table tbody').innerHTML = filtered
                 .slice().reverse()
-                .map(d => `
-                <tr>
+                .map(d => `<tr>
                     <td>${d.deviceName || d.deviceId}</td>
                     <td>${d.temperature}</td>
                     <td>${d.humidity}</td>
@@ -249,7 +249,6 @@
 
         const socket = io(); socket.on('new-data', updateAll);
 
-        // 🧠 Gizleme yönetimi
         function hideCard(deviceId) {
             const card = document.getElementById(`card-${deviceId}`);
             if (card) card.style.display = 'none';
@@ -266,15 +265,13 @@
             updateAll();
         }
 
-        // 📅 Sayfa yüklendiğinde tarih alanını bugünün tarihi ile başlat
-        document.addEventListener("DOMContentLoaded", () => {
+        document.addEventListener("DOMContentLoaded", async () => {
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('date-filter').value = today;
+            await loadDeviceList();
+            await updateAll();
+            setInterval(updateAll, 5000);
         });
-
-        loadDeviceList();
-        updateAll();
-        setInterval(updateAll, 5000);
     </script>
 </body>
 </html>
