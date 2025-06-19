@@ -218,22 +218,37 @@
                         <div class="sensor-value text-info">${d.humidity}%</div>
                     </div>`).join('');
 
-            const asc = [...(hist || [])].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-            chart.data.datasets[0].data = asc.map(d => ({ x: localTime(d.timestamp), y: d.temperature }));
-            chart.data.datasets[1].data = asc.map(d => ({ x: localTime(d.timestamp), y: d.humidity }));
-            chart.update();
+            const asc = (hist || []).sort(
+  (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+);
 
-            document.querySelector('#history-table tbody').innerHTML = filtered
-                .slice().reverse()
-                .map(d => `<tr>
-                    <td>${d.deviceName || d.deviceId}</td>
-                    <td>${d.temperature}</td>
-                    <td>${d.humidity}</td>
-                    <td>${localTime(d.timestamp).toLocaleString('tr-TR', {
-                        year: '2-digit', month: '2-digit', day: '2-digit',
-                        hour: '2-digit', minute: '2-digit', second: '2-digit'
-                    })}</td>
-                </tr>`).join('');
+// Grafik
+chart.data.datasets[0].data = asc.map(d => ({
+  x: localTime(d.timestamp),
+  y: d.temperature
+}));
+chart.data.datasets[1].data = asc.map(d => ({
+  x: localTime(d.timestamp),
+  y: d.humidity
+}));
+chart.update();
+
+// Tablo
+document.querySelector('#history-table tbody').innerHTML = asc
+  .slice()                
+  .reverse()                
+  .map(d => `
+    <tr>
+      <td>${d.deviceName || d.deviceId}</td>
+      <td>${d.temperature}</td>
+      <td>${d.humidity}</td>
+      <td>${localTime(d.timestamp).toLocaleString('tr-TR',{
+          year:'2-digit',month:'2-digit',day:'2-digit',
+          hour:'2-digit',minute:'2-digit',second:'2-digit'
+      })}</td>
+    </tr>
+  `).join('');
+
         }
 
         function exportTableToCSV(fname = 'veriler.csv') {
