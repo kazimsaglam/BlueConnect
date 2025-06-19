@@ -105,15 +105,17 @@ app.get('/api/historical-data', async (req, res) => {
         const { deviceId, startDate, endDate } = req.query;
         const collection = db.collection('sensor_readings');
 
-        const query = {
-            timestamp: {
-                $gte: new Date(startDate),
-                $lte: new Date(endDate)
-            }
+        const filter = {
+            ...(deviceId && deviceId !== "undefined" && { deviceId }),
+            ...(startDate && endDate && {
+                timestamp: {
+                    $gte: new Date(startDate),
+                    $lte: new Date(endDate)
+                }
+            })
         };
-        if (deviceId) query.deviceId = deviceId;
 
-        const data = await collection.find(query).sort({ timestamp: 1 }).toArray();
+        const data = await collection.find(filter).sort({ timestamp: 1 }).toArray();
         res.json(data);
     } catch (err) {
         console.error("Geçmiş veri hatası:", err);
