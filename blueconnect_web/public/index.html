@@ -85,6 +85,10 @@
                 color: red;
             }
 
+        .device-card .text-muted {
+            padding-right: 1.5rem; /* X butonuyla çakışmayı önler */
+        }
+
         .device-card {
             position: relative;
         }
@@ -223,13 +227,16 @@
             chart.update();
 
             // Tablo
-            document.querySelector('#history-table tbody').innerHTML = asc.reverse()
+            document.querySelector('#history-table tbody').innerHTML = asc
+                .filter(d => !hiddenDevices.includes(d.deviceId)) // 🔒 tabloyu da filtrele
+                .reverse()
                 .map(d => `<tr>
-                        <td>${d.deviceName || d.deviceId}</td>
-                        <td>${d.temperature}</td>
-                        <td>${d.humidity}</td>
-                        <td>${localTime(d.timestamp).toLocaleString('tr-TR', { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</td>
-                    </tr>`).join('');
+        <td>${d.deviceName || d.deviceId}</td>
+        <td>${d.temperature}</td>
+        <td>${d.humidity}</td>
+        <td>${localTime(d.timestamp).toLocaleString('tr-TR', { year: '2-digit', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</td>
+    </tr>`).join('');
+
         }
 
         function exportTableToCSV(fname = 'veriler.csv') {
