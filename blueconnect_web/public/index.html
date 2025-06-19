@@ -96,15 +96,9 @@
 </head>
 <body class="container py-4">
     <!-- Üst bar -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3 filter-sm">
-        <h1 class="h3 m-0"><i class="fas fa-microchip me-2"></i>BlueConnect Sensör Paneli</h1>
-        <div class="d-flex flex-column flex-sm-row gap-2 w-100 w-md-auto">
-            <select id="device-filter" class="form-select" onchange="updateAll()">
-                <option value="">Tüm Cihazlar</option>
-            </select>
-            <input type="date" id="date-filter" class="form-control" onchange="updateAll()">
-        </div>
-    </div>
+
+
+
 
     <div class="row g-4">
         <!-- Anlık veriler -->
@@ -127,16 +121,19 @@
         <!-- Tablo -->
         <div class="col-12">
             <div class="card p-3">
-                <div class="d-flex justify-content-between align-items-center mb-3 flex-column flex-sm-row gap-2">
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-column flex-sm-row gap-2 flex-wrap">
                     <h5 class="mb-0"><i class="fas fa-table me-2"></i>Veri Geçmişi</h5>
-                    <button id="resetDataBtn" class="btn btn-danger ms-3">
-                        <i class="fas fa-trash-alt"></i> Verileri Sıfırla
-                    </button>
-
-                    <button class="btn btn-success d-inline-flex align-items-center gap-2" onclick="exportTableToCSV()">
-                        <i class="fas fa-file-csv"></i><span>CSV İndir</span>
-                    </button>
+                    <div class="d-flex gap-2">
+                        <button id="resetDataBtn" class="btn btn-danger">
+                            <i class="fas fa-trash-alt"></i> Verileri Sıfırla
+                        </button>
+                        <button class="btn btn-success d-inline-flex align-items-center gap-2" onclick="exportTableToCSV()">
+                            <i class="fas fa-file-csv"></i><span>CSV İndir</span>
+                        </button>
+                    </div>
                 </div>
+
+            </div>
                 <table class="table table-hover mb-0" id="history-table">
                     <thead>
                         <tr><th>Cihaz</th><th>Sıcaklık (°C)</th><th>Nem (%)</th><th>Tarih & Saat</th></tr>
@@ -232,15 +229,15 @@
             document.getElementById('realtime-data').innerHTML = Object.entries(latest || {})
                 .filter(([k, _]) => !hiddenDevices.includes(k))
                 .map(([k, d]) => `
-                        <div class="device-card mb-3 p-3 rounded ${d.temperature > 30 ? 'alert' : ''}" id="card-${k}">
-                            <span class="close-btn" onclick="hideCard('${k}')">&times;</span>
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <h6 class="mb-0">${d.deviceName || k}</h6>
-                                <small class="text-muted">${localTime(d.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</small>
-                            </div>
-                            <div class="sensor-value text-danger">${d.temperature}°C</div>
-                            <div class="sensor-value text-info">${d.humidity}%</div>
-                        </div>`).join('');
+                                <div class="device-card mb-3 p-3 rounded ${d.temperature > 30 ? 'alert' : ''}" id="card-${k}">
+                                    <span class="close-btn" onclick="hideCard('${k}')">&times;</span>
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <h6 class="mb-0">${d.deviceName || k}</h6>
+                                        <small class="text-muted">${localTime(d.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</small>
+                                    </div>
+                                    <div class="sensor-value text-danger">${d.temperature}°C</div>
+                                    <div class="sensor-value text-info">${d.humidity}%</div>
+                                </div>`).join('');
 
             // Grafik
             const asc = [...(hist || [])].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
@@ -255,14 +252,14 @@
             document.querySelector('#history-table tbody').innerHTML = filtered
                 .slice().reverse() // ters sıraya çevir
                 .map(d => `<tr>
-          <td>${d.deviceName || d.deviceId}</td>
-          <td>${d.temperature}</td>
-          <td>${d.humidity}</td>
-          <td>${localTime(d.timestamp).toLocaleString('tr-TR', {
+                  <td>${d.deviceName || d.deviceId}</td>
+                  <td>${d.temperature}</td>
+                  <td>${d.humidity}</td>
+                  <td>${localTime(d.timestamp).toLocaleString('tr-TR', {
                     year: '2-digit', month: '2-digit', day: '2-digit',
                     hour: '2-digit', minute: '2-digit', second: '2-digit'
                 })}</td>
-      </tr>`).join('');
+              </tr>`).join('');
 
         }
 
