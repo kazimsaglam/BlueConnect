@@ -111,7 +111,7 @@
         <div class="col-md-4">
             <div class="card p-3 h-100">
                 <h5 class="mb-3"><i class="fas fa-clock me-2"></i>Anlık Veriler</h5>
-                <button class="btn btn-outline-light btn-sm mb-3" onclick="resetHiddenCards()">Tüm Kartları Geri Getir</button>
+                <button class="btn btn-outline-light btn-sm mb-3" onclick="resetHiddenCards()">Tüm Cihazları Göster</button>
                 <div id="realtime-data"></div>
             </div>
         </div>
@@ -222,8 +222,11 @@
 
             // Grafik
             const asc = [...(hist || [])].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-            chart.data.datasets[0].data = asc.map(d => ({ x: localTime(d.timestamp), y: d.temperature }));
-            chart.data.datasets[1].data = asc.map(d => ({ x: localTime(d.timestamp), y: d.humidity }));
+            const filtered = asc.filter(d => !hiddenDevices.includes(d.deviceId));
+
+            chart.data.datasets[0].data = filtered.map(d => ({ x: localTime(d.timestamp), y: d.temperature }));
+            chart.data.datasets[1].data = filtered.map(d => ({ x: localTime(d.timestamp), y: d.humidity }));
+
             chart.update();
 
             // Tablo
