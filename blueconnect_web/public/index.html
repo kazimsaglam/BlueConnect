@@ -271,6 +271,11 @@
             updateAll();
         }
 
+        document.addEventListener("DOMContentLoaded", () => {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('date-filter').value = today;
+        });
+
         loadDeviceList();
         updateAll();
         setInterval(updateAll, 5000);
