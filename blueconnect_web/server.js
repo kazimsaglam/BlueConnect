@@ -4,8 +4,7 @@ const cors = require('cors');
 const { MongoClient } = require('mongodb');
 const http = require('http');
 const { Server } = require('socket.io');
-
-// Express ve Socket.io Sunucu Kurulumu
+const router = express.Router();
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
@@ -33,7 +32,29 @@ connectDB();
 // WebSocket Bağlantısı
 io.on('connection', (socket) => {
     console.log('🔌 WebSocket bağlantısı kuruldu');
+
+    socket.on('new-data', async (data) => {
+        try {
+            const { deviceId, deviceName, temperature, humidity, timestamp } = data;
+            const collection = db.collection('sensor_readings');
+
+            await collection.insertOne({
+                deviceId,
+                deviceName: deviceName || "Bilinmeyen Cihaz",
+                temperature: parseFloat(temperature),
+                humidity: parseFloat(humidity),
+                timestamp: new Date(timestamp)
+            });
+
+            console.log(`[✓] Socket ile gelen veri kaydedildi: ${deviceId}`);
+
+            io.emit('new-data', data); // geri yay
+        } catch (err) {
+            console.error("Socket veri kaydetme hatası:", err);
+        }
+    });
 });
+
 
 // Static Dosyalar
 app.use(express.static(path.join(__dirname, 'public')));
@@ -74,6 +95,19 @@ app.post('/api/sensor-data', async (req, res) => {
         res.status(500).send("Sunucu hatası");
     }
 });
+
+app.delete("/reset-data", async (req, res) => {
+    try {
+        await db.collection("sensor_readings").deleteMany({});
+        res.sendStatus(200);
+    } catch (err) {
+        console.error("Veriler silinirken hata:", err);
+        res.sendStatus(500);
+    }
+});
+
+
+module.exports = router;
 
 // 2. Son Verileri Göster
 app.get('/api/latest-data', async (req, res) => {
@@ -121,28 +155,14 @@ app.get('/api/historical-data', async (req, res) => {
 
 // 4. Cihaz Listesi Endpoint'i
 app.get('/api/device-list', async (req, res) => {
-      try {
-    const collection = db.collection('sensor_readings')
-
-    const devices = await collection.aggregate([
-      { $sort: { timestamp: -1 } },          
-      { $group: {                          
-          _id: "$deviceId",
-          deviceName: { $first: "$deviceName" }
-      }},
-      { $project: {                      
-          _id: 0,
-          deviceId: "$_id",
-          deviceName: { $ifNull: ["$deviceName", "$_id"] }
-      }},
-      { $sort: { deviceName: 1 } }           
-    ]).toArray();
-
-    res.json(devices);
-  } catch (err) {
-    console.error("Cihaz listesi hatası:", err);
-    res.status(500).json({ error: "Sunucu hatası" });
-  }
+    try {
+        const devices = await db.collection('sensor_readings').distinct('deviceId');
+        const validDevices = devices.filter(id => id && id.trim() !== "");
+        res.json(validDevices);
+    } catch (err) {
+        console.error("Cihaz listesi hatası:", err);
+        res.status(500).json({ error: "Sunucu hatası" });
+    }
 });
 
 // === EKLENENLER: Cihaz Gizleme Sistemi ===
@@ -185,6 +205,7 @@ app.post('/api/unhide-device', async (req, res) => {
         res.status(500).json({ error: "Sunucu hatası" });
     }
 });
+
 
 // Sunucuyu Başlat
 server.listen(3000, () => {
