@@ -112,25 +112,7 @@
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        type: 'time',
-                        time: {
-                            unit: 'minute',
-                            displayFormats: {
-                                minute: 'HH:mm'
-                            }
-                        },
-                        ticks: {
-                            callback: function (value) {
-                                const date = new Date(value);
-                                date.setHours(date.getHours() - 3); // UTC → yerel saat
-                                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                            }
-                        }
-                    }
-                }
+                maintainAspectRatio: false
             }
 
         });
