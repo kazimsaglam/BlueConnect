@@ -4,7 +4,8 @@ const cors = require('cors');
 const { MongoClient } = require('mongodb');
 const http = require('http');
 const { Server } = require('socket.io');
-
+const router = express.Router();
+const SensorData = require('mongodb');
 // Express ve Socket.io Sunucu Kurulumu
 const app = express();
 const server = http.createServer(app);
@@ -75,6 +76,18 @@ app.post('/api/sensor-data', async (req, res) => {
     }
 });
 
+router.delete("/reset-data", async (req, res) => {
+    try {
+        await SensorData.deleteMany({});
+        res.sendStatus(200);
+    } catch (err) {
+        console.error("Veriler silinirken hata:", err);
+        res.sendStatus(500);
+    }
+});
+
+module.exports = router;
+
 // 2. Son Verileri Göster
 app.get('/api/latest-data', async (req, res) => {
     try {
@@ -121,31 +134,15 @@ app.get('/api/historical-data', async (req, res) => {
 
 // 4. Cihaz Listesi Endpoint'i
 app.get('/api/device-list', async (req, res) => {
-  try {
-    const collection = db.collection('sensor_readings');
-
-    // En yeni kaydı baz alarak deviceName’i yakala
-    const devices = await collection.aggregate([
-      { $sort: { timestamp: -1 } },          
-      { $group: {                          
-          _id: "$deviceId",
-          deviceName: { $first: "$deviceName" }
-      }},
-      { $project: {                      
-          _id: 0,
-          deviceId: "$_id",
-          deviceName: { $ifNull: ["$deviceName", "$_id"] }
-      }},
-      { $sort: { deviceName: 1 } }           
-    ]).toArray();
-
-    res.json(devices);
-  } catch (err) {
-    console.error("Cihaz listesi hatası:", err);
-    res.status(500).json({ error: "Sunucu hatası" });
-  }
+    try {
+        const devices = await db.collection('sensor_readings').distinct('deviceId');
+        const validDevices = devices.filter(id => id && id.trim() !== "");
+        res.json(validDevices);
+    } catch (err) {
+        console.error("Cihaz listesi hatası:", err);
+        res.status(500).json({ error: "Sunucu hatası" });
+    }
 });
-
 
 // === EKLENENLER: Cihaz Gizleme Sistemi ===
 
@@ -187,6 +184,10 @@ app.post('/api/unhide-device', async (req, res) => {
         res.status(500).json({ error: "Sunucu hatası" });
     }
 });
+
+const resetRoute = require("./routes/resetData");
+app.use("/", resetRoute);
+
 
 // Sunucuyu Başlat
 server.listen(3000, () => {
